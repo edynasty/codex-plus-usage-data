@@ -1,0 +1,176 @@
+{
+  "schema_version": 2,
+  "cutoff_at": "2026-09-29T14:41:06.722734505Z",
+  "source": "sub2api_snapshot_plus_historical_context_setting",
+  "note": "以 2026-09-29 22:41:06 的 Sub2API 实际模型/思考强度用量为底，再按当时实际上下文设置映射。W3 直接按模型请求拆分。",
+  "mapping": {
+    "W1": "1M",
+    "W2": "1M",
+    "W3": {
+      "gpt-5.6-sol": "1M",
+      "gpt-6-sol": "272K"
+    },
+    "W4": {
+      "gpt-6-sol": "272K"
+    }
+  },
+  "comparison": {
+    "one_m": {
+      "label": "1M",
+      "requests": 4915,
+      "input_tokens": 170294626,
+      "output_tokens": 3501619,
+      "cache_creation_tokens": 0,
+      "cache_read_tokens": 1429056000,
+      "total_tokens": 1602852245,
+      "standard_cost": 2789.55807792,
+      "actual_cost": 2789.55807792,
+      "account_cost": 2789.55807792,
+      "tokens_per_request": 326114.3936927772,
+      "tokens_per_usd": 574590.0247379496,
+      "cache_hit_percent": 89.35226439833838
+    },
+    "two_seventy_two_k": {
+      "label": "272K",
+      "requests": 10273,
+      "input_tokens": 64884450,
+      "output_tokens": 2729655,
+      "cache_creation_tokens": 0,
+      "cache_read_tokens": 1320256384,
+      "total_tokens": 1387870489,
+      "standard_cost": 442.6374262,
+      "actual_cost": 442.6374262,
+      "account_cost": 442.6374262,
+      "tokens_per_request": 135098.85028716052,
+      "tokens_per_usd": 3135456.7120876685,
+      "cache_hit_percent": 95.31567849222759
+    }
+  },
+  "weeks": {
+    "W4": {
+      "one_m": {
+        "requests": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_creation_tokens": 0,
+        "cache_read_tokens": 0,
+        "total_tokens": 0,
+        "standard_cost": 0,
+        "actual_cost": 0,
+        "account_cost": 0,
+        "tokens_per_request": null,
+        "tokens_per_usd": null,
+        "cache_hit_percent": null
+      },
+      "two_seventy_two_k": {
+        "requests": 8577,
+        "input_tokens": 50489154,
+        "output_tokens": 2218564,
+        "cache_creation_tokens": 0,
+        "cache_read_tokens": 1055228672,
+        "total_tokens": 1107936390,
+        "standard_cost": 334.2096824,
+        "actual_cost": 334.2096824,
+        "account_cost": 334.2096824,
+        "tokens_per_request": 129175.28156698146,
+        "tokens_per_usd": 3315093.6323680845,
+        "cache_hit_percent": 95.43381206192112
+      }
+    },
+    "W3": {
+      "one_m": {
+        "requests": 976,
+        "input_tokens": 23465892,
+        "output_tokens": 765683,
+        "cache_creation_tokens": 0,
+        "cache_read_tokens": 387514368,
+        "total_tokens": 411745943,
+        "standard_cost": 622.360407,
+        "actual_cost": 622.360407,
+        "account_cost": 622.360407,
+        "tokens_per_request": 421870.84323770495,
+        "tokens_per_usd": 661587.6240983305,
+        "cache_hit_percent": 94.29026299219335
+      },
+      "two_seventy_two_k": {
+        "requests": 1696,
+        "input_tokens": 14395296,
+        "output_tokens": 511091,
+        "cache_creation_tokens": 0,
+        "cache_read_tokens": 265027712,
+        "total_tokens": 279934099,
+        "standard_cost": 108.42774379999999,
+        "actual_cost": 108.42774379999999,
+        "account_cost": 108.42774379999999,
+        "tokens_per_request": 165055.4829009434,
+        "tokens_per_usd": 2581757.1148243337,
+        "cache_hit_percent": 94.84820663014264
+      }
+    },
+    "W2": {
+      "one_m": {
+        "requests": 1295,
+        "input_tokens": 51326294,
+        "output_tokens": 936120,
+        "cache_creation_tokens": 0,
+        "cache_read_tokens": 435582080,
+        "total_tokens": 487844494,
+        "standard_cost": 772.450024,
+        "actual_cost": 772.450024,
+        "account_cost": 772.450024,
+        "tokens_per_request": 376713.894980695,
+        "tokens_per_usd": 631554.7658006158,
+        "cache_hit_percent": 89.45873664518244
+      },
+      "two_seventy_two_k": {
+        "requests": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_creation_tokens": 0,
+        "cache_read_tokens": 0,
+        "total_tokens": 0,
+        "standard_cost": 0,
+        "actual_cost": 0,
+        "account_cost": 0,
+        "tokens_per_request": null,
+        "tokens_per_usd": null,
+        "cache_hit_percent": null
+      }
+    },
+    "W1": {
+      "one_m": {
+        "requests": 2644,
+        "input_tokens": 95502440,
+        "output_tokens": 1799816,
+        "cache_creation_tokens": 0,
+        "cache_read_tokens": 605959552,
+        "total_tokens": 703261808,
+        "standard_cost": 1394.74764692,
+        "actual_cost": 1394.74764692,
+        "account_cost": 1394.74764692,
+        "tokens_per_request": 265984.0423600605,
+        "tokens_per_usd": 504221.5411174934,
+        "cache_hit_percent": 86.3852295506839
+      },
+      "two_seventy_two_k": {
+        "requests": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_creation_tokens": 0,
+        "cache_read_tokens": 0,
+        "total_tokens": 0,
+        "standard_cost": 0,
+        "actual_cost": 0,
+        "account_cost": 0,
+        "tokens_per_request": null,
+        "tokens_per_usd": null,
+        "cache_hit_percent": null
+      }
+    }
+  },
+  "observations": [
+    "W3 的 Sub2API 实际明细只有 GPT-5.6 Sol 与 GPT-6 Sol 两组：GPT-5.6 Sol 归入当时仍在使用的 1M，GPT-6 Sol 归入发布后一直使用的 272K。",
+    "这样 1M 样本包含 W1、W2 以及 W3 的 GPT-5.6 Sol；272K 样本包含 W3 与 W4 的 GPT-6 Sol，不再丢掉整个 W3。",
+    "这仍然不是同一模型、同一任务的控制变量 A/B；Token/$ 同时受模型价格、任务结构、缓存命中与请求长度影响。"
+  ]
+}
