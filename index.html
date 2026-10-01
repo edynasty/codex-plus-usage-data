@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Codex Plus usage benchmark — static snapshot">
+<title>Codex Plus Usage</title>
+<link rel="stylesheet" href="./assets/style.css?v=20260930-1415">
+</head>
+<body>
+<main>
+  <header class="topline">
+    <div class="kicker">Codex Plus usage / static snapshot</div>
+    <div class="meta">snapshot <span id="generated">—</span><br>W4 截至 9/29 22:41 左右，5.6 Sol 补测前</div>
+  </header>
+
+  <section class="summary">
+    <div class="metric"><div class="value" id="total">—</div><div class="label">总 Token</div></div>
+    <div class="metric"><div class="value" id="requests">—</div><div class="label">请求</div></div>
+    <div class="metric"><div class="value" id="cache">—</div><div class="label">Cache Hit</div></div>
+    <div class="metric"><div class="value" id="cost">—</div><div class="label">API 等价 / Account Cost</div></div>
+    <div class="metric"><div class="value" id="tpu">—</div><div class="label">Token / $1</div></div>
+  </section>
+
+  <section class="section data-section">
+    <div class="section-head">
+      <div>
+        <div class="section-label">用量明细</div>
+        <div class="note">表格放在最上面。点击行逐级展开；上下文层根据 Sub2API 实际模型明细与当时实际上下文设置映射。</div>
+      </div>
+      <div class="tabs">
+        <button data-tree="week_account_model_effort" class="active">周 · 账号 · 模型 · 思考强度 · 上下文</button>
+        <button data-tree="week_effort_model">周 · 思考强度 · 模型 · 上下文</button>
+        <button data-tree="month_account_model">月 · 账号 · 模型</button>
+      </div>
+    </div>
+    <div class="usage-table-wrap">
+      <div id="tree" class="usage-table"></div>
+    </div>
+  </section>
+
+  <section class="section data-section">
+    <div class="section-label">重置</div>
+    <div class="reset-summary-grid">
+      <div>
+        <div class="note strong-note">Reset Card</div>
+        <div class="note">Manual / Auto 都表示成功用卡；Auto 是 sub2api 自动用卡，不是 Tibo Global Reset。</div>
+        <div id="reset-cards"></div>
+      </div>
+      <div>
+        <div class="note strong-note">Tibo / OpenAI Global Reset <span class="badge" id="global-count">—</span></div>
+        <div class="note">Global Reset 与 Reset Card 独立统计；Global Reset / Banked Grant 为人工记录。</div>
+        <div id="reset-timeline"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section benchmark-section">
+    <div class="section-label">Benchmark</div>
+    <div class="note">图表放在明细与重置之后。Token / $ = 总 Token ÷ Account Cost；缓存命中直接标在每一行。</div>
+
+    <div class="grid2 benchmark-top">
+      <div class="chart-block">
+        <div class="chart-label">Token / $ · 模型</div>
+        <div class="chart-note">主图只放请求数 ≥ 100 的模型，小样本单独列出。</div>
+        <div class="bench" id="models"></div>
+        <div id="models-small" class="small-sample-box"></div>
+      </div>
+      <div class="chart-block">
+        <div class="chart-label">Token / $ · 思考强度（按模型）</div>
+        <div class="chart-note">同时显示 Cache Hit、$/req 和请求数。</div>
+        <div id="effort-groups"></div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="chart-block">
+        <div class="chart-label">Token / $ · 上下文</div>
+        <div class="chart-note">先只看 1M / 272K 两个上下文阶段的总体效率。</div>
+        <div class="bench" id="context-bench"></div>
+      </div>
+      <div class="chart-block">
+        <div class="chart-label">Token / $ · 周</div>
+        <div class="bench" id="week-tpu"></div>
+      </div>
+    </div>
+
+    <div class="chart-block context-wide">
+      <div class="chart-label">Token / $ · 模型 · 上下文</div>
+      <div class="chart-note">先分 1M / 272K，再看每个模型；两边使用同一条形比例尺，小样本会直接标注。</div>
+      <div id="model-context-groups" class="context-model-grid"></div>
+    </div>
+
+    <div class="chart-block context-wide">
+      <div class="chart-label">Token / $ · 模型 · 思考强度 · 上下文</div>
+      <div class="chart-note">上下文 → 模型 → 思考强度。1M / 272K 共用同一比例尺，便于直接比较。</div>
+      <div id="effort-context-groups" class="context-effort-grid"></div>
+    </div>
+
+    <div class="chart-block">
+      <div class="chart-label">总 Token · 周</div>
+      <div class="bench" id="week-tokens"></div>
+    </div>
+
+    <div class="chart-block account-chart">
+      <div class="chart-label">Token / $ · 账号</div>
+      <div class="bench" id="accounts"></div>
+    </div>
+  </section>
+
+  <footer>
+    纯静态 HTML + JSON。公开页不调用 sub2api 管理 API；真实账号名、账号 ID、Quota 快照、凭据与管理地址未公开。数据与页面源码：<a href="https://github.com/edynasty/codex-plus-usage-data" target="_blank" rel="noreferrer">GitHub</a>。
+  </footer>
+</main>
+<script src="./assets/app.js?v=20260930-1415"></script>
+</body>
+</html>
