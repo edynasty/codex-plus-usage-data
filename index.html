@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="description" content="Anonymized real-world Codex and Claude subscription usage data">
 <title>Codex + Claude Usage Data</title>
-<link rel="stylesheet" href="./assets/style.css?v=20261005-1228">
+<link rel="stylesheet" href="./assets/style.css?v=20261005-2015">
 </head>
 <body>
 <main>
@@ -59,7 +59,17 @@
 
     <div class="grid2">
       <div class="chart-block"><div class="chart-label">Cache Hit · 模型</div><div id="model-cache" class="bench"></div></div>
-      <div class="chart-block"><div class="chart-label">Token / $ · 模型 · 思考强度</div><div id="effort-bench"></div></div>
+      <div class="chart-block">
+        <div class="chart-label">Token / $ · 模型 · 思考强度</div>
+        <div class="chart-note" id="effort-note">优先使用当前 usage_logs；若当前数据尚未生成，则回退展示 2026-09-29 Codex 历史快照，并明确标记。</div>
+        <div id="effort-bench"></div>
+      </div>
+    </div>
+
+    <div class="chart-block context-block">
+      <div class="chart-label">1M vs 272K · Codex 历史上下文对比</div>
+      <div class="chart-note">固定使用 2026-09-29 快照：1M 包含 W1、W2 与 W3 GPT-5.6 Sol；272K 包含 W3、W4 GPT-6 Sol。不是同模型同任务的控制变量 A/B。</div>
+      <div id="context-comparison"></div>
     </div>
 
     <div class="grid2">
@@ -88,6 +98,6 @@
 
   <footer>公开页只读取脱敏聚合数据；真实账号名、账号 ID、凭据、Request ID、IP 与 User-Agent 不发布。</footer>
 </main>
-<script src="./assets/app.js?v=20261005-1942"></script>
+<script src="./assets/app.js?v=20261005-2015"></script>
 </body>
 </html>
