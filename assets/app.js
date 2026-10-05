@@ -8,7 +8,20 @@ function fmtDurationMs(n){if(n==null||!Number.isFinite(Number(n)))return'—';n=
 function fmtTps(n){return n==null||!Number.isFinite(Number(n))?'—':new Intl.NumberFormat('en-US',{maximumFractionDigits:0}).format(Number(n))}
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function providerLabel(v){return v==='codex'?'Codex':v==='claude'?'Claude':String(v||'—')}
-async function json(url,required=true){const r=await fetch(url,{cache:'no-store'});if(!r.ok){if(required)throw new Error(url+' '+r.status);return null}return r.json()}
+async function json(url,required=true){
+ const r=await fetch(url,{cache:'no-store'});
+ if(!r.ok){if(required)throw new Error(url+' '+r.status);return null}
+ const text=await r.text();
+ const trimmed=text.trimStart();
+ if(!trimmed||trimmed.startsWith('<')){
+   if(required)throw new Error(url+' 返回的不是 JSON');
+   return null;
+ }
+ try{return JSON.parse(text)}catch(err){
+   if(required)throw new Error(url+' JSON 解析失败: '+err.message);
+   return null;
+ }
+}
 function bench(el,data,value,render,alt=false){
  if(!el)return;
  if(!data.length){el.innerHTML='<div class="current-empty">暂无数据</div>';return}
