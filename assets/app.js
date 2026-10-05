@@ -110,20 +110,29 @@ async function optionalJSON(url){
  try{const r=await fetch(url,{cache:'no-store'});if(!r.ok)return null;return await r.json()}catch{return null}
 }
 function providerLabel(v){return v==='codex'?'Codex':v==='claude'?'Claude':v}
-function renderCurrent(summary,quota,perf){
+function renderCurrent(summary,weekly,models,quota,perf){
  const status=$('#current-status'),content=$('#current-content'),empty=$('#current-empty');
  if(!summary||!Array.isArray(summary.providers)||!summary.providers.length){
-   if(status)status.textContent='等待最新脱敏快照';
+   if(status)status.textContent='最新数据不可用';
    if(content)content.hidden=true;
    if(empty)empty.hidden=false;
    return;
  }
+ window.__currentLoaded=true;
  if(status){
    status.textContent='updated '+new Date(summary.generated_at).toLocaleString('zh-CN',{hour12:false});
    status.classList.add('live');
  }
  if(empty)empty.hidden=true;
  if(content)content.hidden=false;
+
+ const c=summary.combined||{};
+ $('#generated').textContent=new Date(summary.generated_at).toLocaleString('zh-CN',{hour12:false});
+ $('#total').textContent=fmtTok(c.total_tokens);
+ $('#requests').textContent=fmtInt(c.requests);
+ $('#cache').textContent=fmtPct(c.cache_hit_percent);
+ $('#cost').textContent=fmtMoney(c.cost);
+ $('#tpu').textContent=fmtTok(c.tokens_per_usd);
 
  const providers=summary.providers||[];
  $('#provider-summary').innerHTML=providers.map(p=>'<div class="provider-card">'+
@@ -134,42 +143,66 @@ function renderCurrent(summary,quota,perf){
    '<div class="provider-metric"><strong>'+fmtTok(p.tokens_per_usd)+'</strong><span>Token / $</span></div>'+
  '</div>').join('');
 
- const qrows=quota?.by_provider||[];
- $('#quota-efficiency').innerHTML=providers.map(p=>{
-   const rows=qrows.filter(q=>q.provider===p.provider);
-   if(!rows.length)return '<div class="quota-provider"><div class="quota-provider-head"><span>'+esc(providerLabel(p.provider))+'</span><span class="small">暂无窗口样本</span></div></div>';
-   return '<div class="quota-provider"><div class="quota-provider-head"><span>'+esc(providerLabel(p.provider))+'</span><span class="small">实际利用率样本</span></div>'+
-     rows.map(q=>'<div class="quota-row">'+
-       '<strong>'+esc(q.window)+'</strong>'+
-       '<div><strong>'+fmtTok(q.tokens_per_1pct_weighted)+'</strong><span> Token / 1%</span></div>'+
-       '<div><strong>'+fmtTok(q.equivalent_100pct_tokens)+'</strong><span> 100% 等价 Token</span></div>'+
-       '<div class="perf-num">'+(q.observed_percent_span?fmtPct(q.observed_percent_span):'—')+' span</div>'+
-     '</div>').join('')+
-   '</div>';
- }).join('');
+ const wrows=(Array.isArray(weekly)?weekly:[]).map(w=>({
+   name:w.week+(w.partial?' *':''),
+   total_tokens:w.total?.total_tokens||0,
+   requests:w.total?.requests||0,
+   codex:(w.by_provider||[]).find(x=>x.provider==='codex')?.total_tokens||0,
+   claude:(w.by_provider||[]).find(x=>x.provider==='claude')?.total_tokens||0
+ }));
+ if(wrows.length)bench($('#current-weekly'),wrows,'total_tokens',x=>fmtTok(x.total_tokens)+' <span class="small">'+fmtInt(x.requests)+' req · Codex '+fmtTok(x.codex)+' · Claude '+fmtTok(x.claude)+'</span>',true);
 
- const prows=(Array.isArray(perf)?perf:[]).filter(x=>Number(x.requests||0)>=20)
-   .sort((a,b)=>String(a.provider).localeCompare(String(b.provider))||Number(b.requests||0)-Number(a.requests||0));
- const head='<div class="perf-row perf-head"><div>模型 / 强度</div><div class="perf-num">TTFT P50</div><div class="perf-num">TTFT P90</div><div class="perf-num">TPS P50</div><div class="perf-num">TPS P90</div><div class="perf-num">E2E P50</div></div>';
- $('#performance-summary').innerHTML='<div class="perf-table">'+head+prows.slice(0,18).map(x=>
-   '<div class="perf-row"><div class="perf-model"><strong>'+esc(x.model||'—')+'</strong><span>'+esc(providerLabel(x.provider))+' · '+esc(x.reasoning_effort||'default')+' · '+fmtInt(x.requests)+' req</span></div>'+
-   '<div class="perf-num">'+fmtDurationMs(x.ttft_p50_ms)+'</div>'+
-   '<div class="perf-num">'+fmtDurationMs(x.ttft_p90_ms)+'</div>'+
-   '<div class="perf-num">'+fmtTps(x.output_tps_p50)+'</div>'+
-   '<div class="perf-num">'+fmtTps(x.output_tps_p90)+'</div>'+
-   '<div class="perf-num">'+fmtDurationMs(x.e2e_p50_ms)+'</div></div>'
- ).join('')+'</div>';
+ const mrows=(Array.isArray(models)?models:[]).filter(x=>Number(x.requests||0)>=20)
+   .sort((a,b)=>Number(b.tokens_per_usd||0)-Number(a.tokens_per_usd||0))
+   .map(x=>({name:providerLabel(x.provider)+' · '+x.model,tpd:x.tokens_per_usd,cache:x.cache_hit_percent,requests:x.requests,total:x.total_tokens}));
+ if(mrows.length)bench($('#current-models'),mrows,'tpd',x=>fmtTok(x.tpd)+' / $ <span class="small">Cache '+fmtPct(x.cache)+' · '+fmtInt(x.requests)+' req · '+fmtTok(x.total)+'</span>');
+
+ const qrows=quota?.by_provider||[];
+ if(qrows.length){
+   $('#quota-efficiency').innerHTML=providers.map(p=>{
+     const rows=qrows.filter(q=>q.provider===p.provider);
+     if(!rows.length)return '';
+     return '<div class="quota-provider"><div class="quota-provider-head"><span>'+esc(providerLabel(p.provider))+'</span><span class="small">实际利用率样本</span></div>'+
+       rows.map(q=>'<div class="quota-row"><strong>'+esc(q.window)+'</strong>'+
+         '<div><strong>'+fmtTok(q.tokens_per_1pct_weighted)+'</strong><span> Token / 1%</span></div>'+
+         '<div><strong>'+fmtTok(q.equivalent_100pct_tokens)+'</strong><span> 100% 等价 Token</span></div>'+
+         '<div class="perf-num">'+(q.observed_percent_span?fmtPct(q.observed_percent_span):'—')+' span</div></div>').join('')+
+     '</div>';
+   }).join('');
+ }else{
+   $('#quota-efficiency').innerHTML='<div class="current-empty">当前 Gateway 聚合接口没有逐请求 5h / 7d utilization 历史，因此暂时不能可靠计算 Token / 1%。</div>';
+ }
+
+ const prows=(Array.isArray(perf)?perf:[]).filter(x=>Number(x.requests||0)>=20);
+ if(prows.length){
+   const head='<div class="perf-row perf-head"><div>模型 / 强度</div><div class="perf-num">TTFT P50</div><div class="perf-num">TTFT P90</div><div class="perf-num">TPS P50</div><div class="perf-num">TPS P90</div><div class="perf-num">E2E P50</div></div>';
+   $('#performance-summary').innerHTML='<div class="perf-table">'+head+prows.slice(0,18).map(x=>
+     '<div class="perf-row"><div class="perf-model"><strong>'+esc(x.model||'—')+'</strong><span>'+esc(providerLabel(x.provider))+' · '+esc(x.reasoning_effort||'default')+' · '+fmtInt(x.requests)+' req</span></div>'+
+     '<div class="perf-num">'+fmtDurationMs(x.ttft_p50_ms)+'</div><div class="perf-num">'+fmtDurationMs(x.ttft_p90_ms)+'</div>'+
+     '<div class="perf-num">'+fmtTps(x.output_tps_p50)+'</div><div class="perf-num">'+fmtTps(x.output_tps_p90)+'</div>'+
+     '<div class="perf-num">'+fmtDurationMs(x.e2e_p50_ms)+'</div></div>').join('')+'</div>';
+ }else{
+   $('#performance-summary').innerHTML='<div class="perf-table">'+providers.map(p=>
+     '<div class="perf-row"><div class="perf-model"><strong>'+esc(providerLabel(p.provider))+'</strong><span>Gateway aggregate</span></div>'+
+     '<div class="perf-num">Avg E2E</div><div class="perf-num">'+fmtDurationMs(p.average_duration_ms)+'</div>'+
+     '<div class="perf-num">TTFT</div><div class="perf-num">—</div><div class="perf-num">TPS —</div></div>'
+   ).join('')+'</div>';
+ }
 }
 Promise.all([
  optionalJSON('./data/current/summary.json'),
+ optionalJSON('./data/current/weekly.json'),
+ optionalJSON('./data/current/models.json'),
  optionalJSON('./data/current/quota_efficiency.json'),
  optionalJSON('./data/current/performance.json')
-]).then(([s,q,p])=>renderCurrent(s,q,p));
+]).then(([s,w,m,q,p])=>renderCurrent(s,w,m,q,p));
 
 Promise.all([fetch('./data/latest.json',{cache:'no-store'}).then(r=>r.json()),fetch('./data/resets.json',{cache:'no-store'}).then(r=>r.json()),fetch('./data/context.json',{cache:'no-store'}).then(r=>r.json())]).then(([d,rd,cd])=>{
  const s=d.summary;
- $('#generated').textContent=new Date(d.generated_at).toLocaleString('zh-CN',{hour12:false});
- $('#total').textContent=fmtTok(s.total_tokens);$('#requests').textContent=fmtInt(s.requests);$('#cache').textContent=fmtPct(s.cache_hit_percent);$('#cost').textContent=fmtMoney(s.account_cost);$('#tpu').textContent=fmtTok(s.tokens_per_usd);
+ if(!window.__currentLoaded){
+   $('#generated').textContent=new Date(d.generated_at).toLocaleString('zh-CN',{hour12:false});
+   $('#total').textContent=fmtTok(s.total_tokens);$('#requests').textContent=fmtInt(s.requests);$('#cache').textContent=fmtPct(s.cache_hit_percent);$('#cost').textContent=fmtMoney(s.account_cost);$('#tpu').textContent=fmtTok(s.tokens_per_usd);
+ }
 
  renderTree(d,'week_account_model_effort');
  renderContext(cd);
