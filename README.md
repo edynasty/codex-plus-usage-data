@@ -8,7 +8,23 @@ An anonymized real-world ChatGPT Plus / Codex usage dataset collected from three
 
 The visualization source code and the public JSON files used by the page are included in this repository.
 
-## Snapshot
+## Current aggregate
+
+Current data through **2026-10-05** is published under `data/current/` and shown first on the live page.
+
+| Provider | Requests | Total tokens | Cache hit | Token / $ |
+| --- | ---: | ---: | ---: | ---: |
+| Codex | 29,895 | 4,917,039,537 | 93.86% | 1,453,362 |
+| Claude | 3,868 | 563,988,466 | 94.78% | 1,463,545 |
+| **Combined** | **33,763** | **5,481,028,003** | **93.95%** | **1,454,404** |
+
+The current weekly series now includes **W5 (2026-10-03 to 2026-10-05, partial)**.
+
+The current aggregate is read from Sub2API's authenticated gateway usage endpoint using existing local provider credentials and then sanitized before publication. It contains no credentials, account names, user emails, request IDs, IP addresses or user agents.
+
+The gateway aggregate endpoint currently exposes daily/model usage and average request duration, but not request-level subscription-window percentages or TTFT/TPS. Therefore 5h/7d Token-per-1% and TTFT/TPS are intentionally left unavailable in the current aggregate rather than estimated.
+
+## Historical Codex snapshot
 
 Cutoff: **2026-09-29 22:41 (UTC+8)**
 
