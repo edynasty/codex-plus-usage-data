@@ -1,279 +1,115 @@
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
-const fmtInt=n=>new Intl.NumberFormat('en-US').format(Math.round(n||0));
-const fmtMoney=n=>'$'+new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n||0);
-const fmtPct=n=>n==null?'—':new Intl.NumberFormat('en-US',{maximumFractionDigits:1}).format(n)+'%';
-function fmtTok(n){n=Number(n||0);if(n>=1e8)return(n/1e8).toFixed(2)+'亿';if(n>=1e4)return(n/1e4).toFixed(2)+'万';if(n>=1e3)return(n/1e3).toFixed(1)+'K';return fmtInt(n)}
-function fmtDateShort(v){const d=new Date(v);return String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0')}
-function calc(rows){const x={requests:0,input_tokens:0,output_tokens:0,cache_creation_tokens:0,cache_read_tokens:0,total_tokens:0,account_cost:0};for(const r of rows)for(const k in x)x[k]+=Number(r.metrics?.[k]||0);x.tpd=x.account_cost>0?x.total_tokens/x.account_cost:null;x.tpr=x.requests>0?x.total_tokens/x.requests:null;x.cpr=x.requests>0?x.account_cost/x.requests:null;const den=x.input_tokens+x.cache_creation_tokens+x.cache_read_tokens;x.cache=den>0?x.cache_read_tokens/den*100:null;return x}
-function group(rows,key){const m=new Map;for(const r of rows){const k=r[key]??'unknown';if(!m.has(k))m.set(k,[]);m.get(k).push(r)}return[...m].map(([name,rr])=>({name,...calc(rr)}))}
-function bench(el,data,value,render,alt=false){const max=Math.max(...data.map(x=>Number(x[value]||0)),1);el.innerHTML=data.map(x=>`<div class="brow"><div class="bname">${x.name}</div><div class="barwrap"><div class="bar ${alt?'alt':''}" style="width:${Math.max(0,(x[value]||0)/max*100)}%"></div></div><div class="bvalue">${render(x)}</div></div>`).join('')}
-function range(e){const r=e.before_weekly_used_percent_range;if(!Array.isArray(r))return'未知';return r[0]===r[1]?r[0]+'%':r[0]+'–'+r[1]+'%'}
-function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function tokenBreakdown(m){m=m||{};return `<div class="token-lines"><span>输入 ${fmtTok(m.input_tokens)}</span><span>输出 ${fmtTok(m.output_tokens)}</span><span>缓存写入 ${fmtTok(m.cache_creation_tokens)}</span><span>缓存读取 ${fmtTok(m.cache_read_tokens)}</span></div>`}
-function resetText(r){if(!r)return'—';return `<strong>已用 ${fmtInt(r.used)} 次</strong><span>手动 ${fmtInt(r.manual)} · 自动 ${fmtInt(r.auto)}</span>`}
-function treeLabel(n,depth){const kind=n.kind||'';const name=esc(n.label||'');const badge=kind==='account'?'<span class="kind-badge">账号</span>':kind==='model'?'<span class="kind-badge">模型</span>':kind==='effort'?'<span class="kind-badge">强度</span>':kind==='context'?'<span class="kind-badge">上下文</span>':'';return `<span class="indent" style="--depth:${depth}"></span>${badge}<span class="node-label">${name}</span>`}
-function rowHtml({id,parentId,depth,label,metrics,resets,cache,tpd,share,childrenCount,note}){
- const classes=['usage-row'];if(depth>0)classes.push('is-child','is-hidden');if(childrenCount>0)classes.push('has-children');
- return `<div class="${classes.join(' ')}" data-id="${id}" ${parentId?`data-parent="${parentId}"`:''} data-depth="${depth}">
-   <div class="cell hierarchy">${childrenCount>0?'<button class="toggle" aria-label="展开/收起" aria-expanded="false">›</button>':'<span class="toggle-spacer"></span>'}${label}</div>
-   <div class="cell num">${fmtInt(metrics?.requests)}</div>
-   <div class="cell token-detail">${tokenBreakdown(metrics)}</div>
-   <div class="cell num strong">${fmtTok(metrics?.total_tokens)}${share!=null?`<span class="sub">占比 ${fmtPct(share)}</span>`:''}</div>
-   <div class="cell num">${tpd?fmtTok(tpd):'—'}</div>
-   <div class="cell num">${fmtPct(cache)}</div>
-   <div class="cell num">${fmtMoney(metrics?.standard_cost)}</div>
-   <div class="cell num">${fmtMoney(metrics?.actual_cost)}</div>
-   <div class="cell num strong">${fmtMoney(metrics?.account_cost)}</div>
-   <div class="cell reset-cell">${resetText(resets)}</div>
-   <div class="cell note-cell">${note||''}</div>
- </div>`}
-function contextLabelForWeek(weekIndex,modelName){
- if(weekIndex===1||weekIndex===2)return'1M';
- if(weekIndex===3&&modelName==='gpt-5.6-sol')return'1M';
- if((weekIndex===3||weekIndex===4)&&modelName==='gpt-6-sol')return'272K';
- return'—';
-}
-function collectTreeRows(buckets,summaryTotal,key){
- const out=[];let seq=0;
- const walk=(nodes,parentId,depth,weekIndex,modelName)=>{
-   for(const n of nodes||[]){
-     const id='r'+(++seq);
-     const currentModel=n.kind==='model'?(n.label||n.key||modelName):modelName;
-     const children=n.children||[];
-     const addContext=(key==='week_account_model_effort'&&n.kind==='effort')||(key==='week_effort_model'&&n.kind==='model');
-     out.push({id,parentId,depth,label:treeLabel(n,depth),metrics:n.metrics||{},resets:n.resets,cache:n.cache_hit_percent,tpd:n.tokens_per_usd,share:n.token_share_percent,childrenCount:children.length+(addContext?1:0),note:n.kind==='account'?(n.plan_type?esc(n.plan_type):''):''});
-     walk(children,id,depth+1,weekIndex,currentModel);
-     if(addContext){
-       const ctx=contextLabelForWeek(weekIndex,currentModel);
-       const cid='r'+(++seq);
-       out.push({
-         id:cid,parentId:id,depth:depth+1,
-         label:treeLabel({kind:'context',label:ctx},depth+1),
-         metrics:n.metrics||{},resets:null,cache:n.cache_hit_percent,tpd:n.tokens_per_usd,
-         share:null,childrenCount:0,
-         note:ctx==='—'?'未映射':'Sub2API 实际模型明细 + 当时上下文设置'
-       });
-     }
-   }
- };
- for(const b of buckets||[]){
-   const id='r'+(++seq);
-   const share=summaryTotal>0?(Number(b.metrics?.total_tokens||0)/summaryTotal*100):null;
-   const period=`${fmtDateShort(b.start)} – ${fmtDateShort(b.end)}`;
-   const groups=b.groups||[];
-   const title=key.startsWith('month')?String(b.start||'').slice(0,7):'第 '+b.index+' 周';
-   out.push({
-     id,parentId:null,depth:0,
-     label:`<span class="week-title">${title}</span>${b.current?'<span class="current-badge">进行中</span>':''}<span class="period">${period}</span>`,
-     metrics:b.metrics||{},resets:b.resets,cache:b.cache_hit_percent,tpd:b.tokens_per_usd,share,childrenCount:groups.length,
-     note:`${groups.length} 个${groups[0]?.kind==='account'?'账号':'分组'}`,
-   });
-   walk(groups,id,1,Number(b.index||0),null);
- }
- return out;
-}
-function renderTree(data,key){
- const el=$('#tree');
- const buckets=(data.trees?.[key]||[]).slice();
- const rows=collectTreeRows(buckets,Number(data.summary?.total_tokens||0),key);
- const hierarchyTitle=key==='week_effort_model'?'层级 · 思考强度 › 模型 › 上下文':key==='month_account_model'?'层级 · 账号 › 模型':'层级 · 账号 › 模型 › 思考强度 › 上下文';
- el.innerHTML=`<div class="usage-row usage-head">
-   <div class="cell">${hierarchyTitle}</div><div class="cell num">请求数</div><div class="cell">Token 明细</div><div class="cell num">总 Token</div><div class="cell num">每刀 Token</div><div class="cell num">缓存命中</div><div class="cell num">标准计费</div><div class="cell num">实际扣费</div><div class="cell num">账号成本</div><div class="cell">Reset Card</div><div class="cell">备注</div>
- </div>`+rows.map(rowHtml).join('');
- const map=new Map(rows.map(r=>[r.id,r]));
- const rowEls=new Map($$('#tree .usage-row[data-id]').map(e=>[e.dataset.id,e]));
- const directChildren=id=>[...rowEls.values()].filter(e=>e.dataset.parent===id);
- const descendants=id=>{const all=[];const q=[id];while(q.length){const p=q.shift();for(const c of directChildren(p)){all.push(c);q.push(c.dataset.id)}}return all};
- const collapse=id=>{const elr=rowEls.get(id);if(!elr)return;elr.classList.remove('is-expanded');elr.querySelector('.toggle')?.setAttribute('aria-expanded','false');for(const d of descendants(id)){d.classList.add('is-hidden');d.classList.remove('is-expanded');d.querySelector('.toggle')?.setAttribute('aria-expanded','false')}};
- const expand=id=>{const elr=rowEls.get(id);if(!elr)return;elr.classList.add('is-expanded');elr.querySelector('.toggle')?.setAttribute('aria-expanded','true');for(const c of directChildren(id))c.classList.remove('is-hidden')};
- for(const [id,elr] of rowEls){if(!(map.get(id)?.childrenCount>0))continue;const fire=()=>elr.classList.contains('is-expanded')?collapse(id):expand(id);elr.querySelector('.toggle')?.addEventListener('click',e=>{e.stopPropagation();fire()});elr.addEventListener('click',e=>{if(e.target.closest('button'))return;fire()})}
-}
-function renderContext(c){
- const el=$('#context-bench');if(!el||!c)return;
- const a=c.comparison?.one_m||{},b=c.comparison?.two_seventy_two_k||{};
- const ratio=a.tokens_per_usd?b.tokens_per_usd/a.tokens_per_usd:null;
- const deltaReq=a.tokens_per_request?((b.tokens_per_request/a.tokens_per_request-1)*100):null;
- const rows=[
-   {name:'1M',tpd:a.tokens_per_usd,tpr:a.tokens_per_request,cache:a.cache_hit_percent,requests:a.requests},
-   {name:'272K',tpd:b.tokens_per_usd,tpr:b.tokens_per_request,cache:b.cache_hit_percent,requests:b.requests}
- ];
- bench(el,rows,'tpd',x=>fmtTok(x.tpd)+' / $ <span class="small">Cache '+fmtPct(x.cache)+' · '+fmtTok(x.tpr)+'/req · '+fmtInt(x.requests)+' req'+(x.name==='272K'&&ratio!=null?' · '+ratio.toFixed(2)+'× Token/$':'')+(x.name==='272K'&&deltaReq!=null?' · 单次 '+Math.abs(deltaReq).toFixed(1)+'% 更短':'')+'</span>',true);
-}
-function fmtDurationMs(n){
- if(n==null||!Number.isFinite(Number(n)))return'—';
- n=Number(n);
- return n>=1000?(n/1000).toFixed(n>=10000?1:2)+'s':Math.round(n)+'ms';
-}
+const fmtInt=n=>new Intl.NumberFormat('en-US').format(Math.round(Number(n||0)));
+const fmtMoney=n=>'$'+new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(n||0));
+const fmtPct=n=>n==null||!Number.isFinite(Number(n))?'—':new Intl.NumberFormat('en-US',{maximumFractionDigits:1}).format(Number(n))+'%';
+function fmtTok(n){n=Number(n||0);if(n>=1e9)return(n/1e9).toFixed(3)+'B';if(n>=1e6)return(n/1e6).toFixed(2)+'M';if(n>=1e3)return(n/1e3).toFixed(1)+'K';return fmtInt(n)}
+function fmtDurationMs(n){if(n==null||!Number.isFinite(Number(n)))return'—';n=Number(n);return n>=1000?(n/1000).toFixed(n>=10000?1:2)+'s':Math.round(n)+'ms'}
 function fmtTps(n){return n==null||!Number.isFinite(Number(n))?'—':new Intl.NumberFormat('en-US',{maximumFractionDigits:0}).format(Number(n))}
-async function optionalJSON(url){
- try{const r=await fetch(url,{cache:'no-store'});if(!r.ok)return null;return await r.json()}catch{return null}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function providerLabel(v){return v==='codex'?'Codex':v==='claude'?'Claude':String(v||'—')}
+async function json(url,required=true){const r=await fetch(url,{cache:'no-store'});if(!r.ok){if(required)throw new Error(url+' '+r.status);return null}return r.json()}
+function bench(el,data,value,render,alt=false){
+ if(!el)return;
+ if(!data.length){el.innerHTML='<div class="current-empty">暂无数据</div>';return}
+ const max=Math.max(...data.map(x=>Number(x[value]||0)),1);
+ el.innerHTML=data.map(x=>'<div class="brow"><div class="bname">'+esc(x.name)+'</div><div class="barwrap"><div class="bar '+(alt?'alt':'')+'" style="width:'+Math.max(0,(Number(x[value]||0)/max*100))+'%"></div></div><div class="bvalue">'+render(x)+'</div></div>').join('');
 }
-function providerLabel(v){return v==='codex'?'Codex':v==='claude'?'Claude':v}
-function renderCurrent(summary,weekly,models,quota,perf){
- const status=$('#current-status'),content=$('#current-content'),empty=$('#current-empty');
- if(!summary||!Array.isArray(summary.providers)||!summary.providers.length){
-   if(status)status.textContent='最新数据不可用';
-   if(content)content.hidden=true;
-   if(empty)empty.hidden=false;
-   return;
+function detailLabel(kind,name,depth){
+ const badge=kind==='provider'?'<span class="kind-badge">Provider</span>':kind==='model'?'<span class="kind-badge">模型</span>':'';
+ return '<span class="indent" style="--depth:'+depth+'"></span>'+badge+'<span class="node-label">'+esc(name)+'</span>';
+}
+function detailRow(r){
+ const c=['usage-row','current-detail-row'];if(r.depth>0)c.push('is-child','is-hidden');if(r.childrenCount)c.push('has-children');
+ const m=r.metrics||{};
+ return '<div class="'+c.join(' ')+'" data-id="'+r.id+'" '+(r.parentId?'data-parent="'+r.parentId+'"':'')+' data-depth="'+r.depth+'">'+
+  '<div class="cell hierarchy">'+(r.childrenCount?'<button class="toggle" aria-label="展开/收起" aria-expanded="false">›</button>':'<span class="toggle-spacer"></span>')+r.label+'</div>'+
+  '<div class="cell num">'+fmtInt(m.requests)+'</div>'+
+  '<div class="cell num">'+fmtTok(m.input_tokens)+'</div>'+
+  '<div class="cell num">'+fmtTok(m.output_tokens)+'</div>'+
+  '<div class="cell num">'+fmtTok(m.cache_creation_tokens)+'</div>'+
+  '<div class="cell num">'+fmtTok(m.cache_read_tokens)+'</div>'+
+  '<div class="cell num strong">'+fmtTok(m.total_tokens)+'</div>'+
+  '<div class="cell num">'+(m.tokens_per_usd?fmtTok(m.tokens_per_usd):'—')+'</div>'+
+  '<div class="cell num">'+fmtPct(m.cache_hit_percent)+'</div>'+
+  '<div class="cell num strong">'+fmtMoney(m.cost)+'</div>'+
+ '</div>';
+}
+function renderDetail(weekly,weeklyModels){
+ const el=$('#detail-tree');let seq=0;const rows=[];
+ for(const w of weekly||[]){
+  const wid='d'+(++seq),providers=(w.by_provider||[]).filter(x=>Number(x.requests||0)>0);
+  rows.push({id:wid,parentId:null,depth:0,childrenCount:providers.length,metrics:w.total||{},label:'<span class="week-title">'+esc(w.week)+'</span>'+(w.partial?'<span class="current-badge">进行中</span>':'')+'<span class="period">'+esc(w.start)+' – '+esc(w.end)+'</span>'});
+  for(const p of providers){
+   const pid='d'+(++seq);
+   const ms=(weeklyModels||[]).filter(x=>x.week===w.week&&x.provider===p.provider&&Number(x.requests||0)>0).sort((a,b)=>Number(b.total_tokens||0)-Number(a.total_tokens||0));
+   rows.push({id:pid,parentId:wid,depth:1,childrenCount:ms.length,metrics:p,label:detailLabel('provider',providerLabel(p.provider),1)});
+   for(const m of ms)rows.push({id:'d'+(++seq),parentId:pid,depth:2,childrenCount:0,metrics:m,label:detailLabel('model',m.model||'—',2)});
+  }
  }
- window.__currentLoaded=true;
- if(status){
-   status.textContent='updated '+new Date(summary.generated_at).toLocaleString('zh-CN',{hour12:false});
-   status.classList.add('live');
- }
- if(empty)empty.hidden=true;
- if(content)content.hidden=false;
-
- const c=summary.combined||{};
- $('#generated').textContent=new Date(summary.generated_at).toLocaleString('zh-CN',{hour12:false});
- $('#total').textContent=fmtTok(c.total_tokens);
- $('#requests').textContent=fmtInt(c.requests);
- $('#cache').textContent=fmtPct(c.cache_hit_percent);
- $('#cost').textContent=fmtMoney(c.cost);
- $('#tpu').textContent=fmtTok(c.tokens_per_usd);
-
- const providers=summary.providers||[];
- $('#provider-summary').innerHTML=providers.map(p=>'<div class="provider-card">'+
-   '<div class="provider-name">'+esc(providerLabel(p.provider))+'</div>'+
-   '<div class="provider-metric"><strong>'+fmtInt(p.requests)+'</strong><span>请求</span></div>'+
-   '<div class="provider-metric"><strong>'+fmtTok(p.total_tokens)+'</strong><span>总 Token</span></div>'+
-   '<div class="provider-metric"><strong>'+fmtPct(p.cache_hit_percent)+'</strong><span>Cache Hit</span></div>'+
-   '<div class="provider-metric"><strong>'+fmtTok(p.tokens_per_usd)+'</strong><span>Token / $</span></div>'+
- '</div>').join('');
-
- const wrows=(Array.isArray(weekly)?weekly:[]).map(w=>({
-   name:w.week+(w.partial?' *':''),
-   total_tokens:w.total?.total_tokens||0,
-   requests:w.total?.requests||0,
-   codex:(w.by_provider||[]).find(x=>x.provider==='codex')?.total_tokens||0,
-   claude:(w.by_provider||[]).find(x=>x.provider==='claude')?.total_tokens||0
- }));
- if(wrows.length)bench($('#current-weekly'),wrows,'total_tokens',x=>fmtTok(x.total_tokens)+' <span class="small">'+fmtInt(x.requests)+' req · Codex '+fmtTok(x.codex)+' · Claude '+fmtTok(x.claude)+'</span>',true);
-
- const mrows=(Array.isArray(models)?models:[]).filter(x=>Number(x.requests||0)>=20)
-   .sort((a,b)=>Number(b.tokens_per_usd||0)-Number(a.tokens_per_usd||0))
-   .map(x=>({name:providerLabel(x.provider)+' · '+x.model,tpd:x.tokens_per_usd,cache:x.cache_hit_percent,requests:x.requests,total:x.total_tokens}));
- if(mrows.length)bench($('#current-models'),mrows,'tpd',x=>fmtTok(x.tpd)+' / $ <span class="small">Cache '+fmtPct(x.cache)+' · '+fmtInt(x.requests)+' req · '+fmtTok(x.total)+'</span>');
-
- const qrows=quota?.by_provider||[];
- if(qrows.length){
-   $('#quota-efficiency').innerHTML=providers.map(p=>{
-     const rows=qrows.filter(q=>q.provider===p.provider);
-     if(!rows.length)return '';
-     return '<div class="quota-provider"><div class="quota-provider-head"><span>'+esc(providerLabel(p.provider))+'</span><span class="small">实际利用率样本</span></div>'+
-       rows.map(q=>'<div class="quota-row"><strong>'+esc(q.window)+'</strong>'+
-         '<div><strong>'+fmtTok(q.tokens_per_1pct_weighted)+'</strong><span> Token / 1%</span></div>'+
-         '<div><strong>'+fmtTok(q.equivalent_100pct_tokens)+'</strong><span> 100% 等价 Token</span></div>'+
-         '<div class="perf-num">'+(q.observed_percent_span?fmtPct(q.observed_percent_span):'—')+' span</div></div>').join('')+
-     '</div>';
-   }).join('');
- }else{
-   $('#quota-efficiency').innerHTML='<div class="current-empty">当前 Gateway 聚合接口没有逐请求 5h / 7d utilization 历史，因此暂时不能可靠计算 Token / 1%。</div>';
- }
-
- const prows=(Array.isArray(perf)?perf:[]).filter(x=>Number(x.requests||0)>=20);
- if(prows.length){
-   const head='<div class="perf-row perf-head"><div>模型 / 强度</div><div class="perf-num">TTFT P50</div><div class="perf-num">TTFT P90</div><div class="perf-num">TPS P50</div><div class="perf-num">TPS P90</div><div class="perf-num">E2E P50</div></div>';
-   $('#performance-summary').innerHTML='<div class="perf-table">'+head+prows.slice(0,18).map(x=>
-     '<div class="perf-row"><div class="perf-model"><strong>'+esc(x.model||'—')+'</strong><span>'+esc(providerLabel(x.provider))+' · '+esc(x.reasoning_effort||'default')+' · '+fmtInt(x.requests)+' req</span></div>'+
-     '<div class="perf-num">'+fmtDurationMs(x.ttft_p50_ms)+'</div><div class="perf-num">'+fmtDurationMs(x.ttft_p90_ms)+'</div>'+
-     '<div class="perf-num">'+fmtTps(x.output_tps_p50)+'</div><div class="perf-num">'+fmtTps(x.output_tps_p90)+'</div>'+
-     '<div class="perf-num">'+fmtDurationMs(x.e2e_p50_ms)+'</div></div>').join('')+'</div>';
- }else{
-   $('#performance-summary').innerHTML='<div class="perf-table">'+providers.map(p=>
-     '<div class="perf-row"><div class="perf-model"><strong>'+esc(providerLabel(p.provider))+'</strong><span>Gateway aggregate</span></div>'+
-     '<div class="perf-num">Avg E2E</div><div class="perf-num">'+fmtDurationMs(p.average_duration_ms)+'</div>'+
-     '<div class="perf-num">TTFT</div><div class="perf-num">—</div><div class="perf-num">TPS —</div></div>'
-   ).join('')+'</div>';
- }
+ el.innerHTML='<div class="usage-row current-detail-row usage-head">'+
+  '<div class="cell">层级 · 周 › Provider › 模型</div><div class="cell num">请求</div><div class="cell num">Input</div><div class="cell num">Output</div><div class="cell num">Cache Write</div><div class="cell num">Cache Read</div><div class="cell num">总 Token</div><div class="cell num">Token / $</div><div class="cell num">Cache Hit</div><div class="cell num">Cost</div></div>'+
+  rows.map(detailRow).join('');
+ const map=new Map(rows.map(r=>[r.id,r])),els=new Map($$('#detail-tree .current-detail-row[data-id]').map(e=>[e.dataset.id,e]));
+ const kids=id=>[...els.values()].filter(e=>e.dataset.parent===id);
+ const descendants=id=>{const out=[],q=[id];while(q.length){for(const c of kids(q.shift())){out.push(c);q.push(c.dataset.id)}}return out};
+ const collapse=id=>{const e=els.get(id);e?.classList.remove('is-expanded');e?.querySelector('.toggle')?.setAttribute('aria-expanded','false');for(const d of descendants(id)){d.classList.add('is-hidden');d.classList.remove('is-expanded');d.querySelector('.toggle')?.setAttribute('aria-expanded','false')}};
+ const expand=id=>{const e=els.get(id);e?.classList.add('is-expanded');e?.querySelector('.toggle')?.setAttribute('aria-expanded','true');for(const c of kids(id))c.classList.remove('is-hidden')};
+ for(const [id,e] of els){if(!(map.get(id)?.childrenCount))continue;const fire=()=>e.classList.contains('is-expanded')?collapse(id):expand(id);e.querySelector('.toggle')?.addEventListener('click',ev=>{ev.stopPropagation();fire()});e.addEventListener('click',ev=>{if(!ev.target.closest('button'))fire()})}
+}
+function renderEffort(rows){
+ const el=$('#effort-bench');
+ if(!rows?.length){el.innerHTML='<div class="current-empty">等待本机 usage_logs 刷新 model_effort.json</div>';return}
+ const groups=new Map;
+ for(const r of rows){const key=providerLabel(r.provider)+' · '+r.model;if(!groups.has(key))groups.set(key,[]);groups.get(key).push(r)}
+ el.innerHTML=[...groups].map(([name,rs])=>'<div class="effort-group"><div class="effort-model">'+esc(name)+'</div><div class="bench">'+rs.sort((a,b)=>Number(b.tokens_per_usd||0)-Number(a.tokens_per_usd||0)).map(r=>'<div class="brow"><div class="bname">'+esc(r.reasoning_effort||'default')+'</div><div class="barwrap"><div class="bar" style="width:'+Math.max(2,Math.min(100,(Number(r.tokens_per_usd||0)/Math.max(...rs.map(x=>Number(x.tokens_per_usd||0)),1)*100)))+'%"></div></div><div class="bvalue">'+fmtTok(r.tokens_per_usd)+' / $ <span class="small">'+fmtInt(r.requests)+' req · Cache '+fmtPct(r.cache_hit_percent)+'</span></div></div>').join('')+'</div></div>').join('');
+}
+function renderQuota(q){
+ const el=$('#quota-efficiency'),rows=q?.by_provider||[];
+ if(!rows.length){el.innerHTML='<div class="current-empty">usage_logs 额度数据尚未发布；运行本机 publisher 后这里会直接显示计算结果。</div>';return}
+ el.innerHTML=['codex','claude'].map(provider=>{
+  const rs=rows.filter(x=>x.provider===provider);if(!rs.length)return'';
+  return '<div class="quota-provider"><div class="quota-provider-head"><span>'+providerLabel(provider)+'</span><span class="small">逐请求窗口利用率</span></div>'+
+   rs.map(x=>'<div class="quota-row"><strong>'+esc(x.window)+'</strong>'+
+    '<div><strong>'+fmtTok(x.tokens_per_1pct_weighted)+'</strong><span> Token / 1%</span></div>'+
+    '<div><strong>'+fmtTok(x.equivalent_100pct_tokens)+'</strong><span> 100% 等价</span></div>'+
+    '<div><strong>'+fmtTok(x.equivalent_100pct_tokens_avg_window)+'</strong><span> 窗口平均</span></div>'+
+    '<div class="perf-num">'+fmtInt(x.window_samples)+' windows · '+fmtPct(x.observed_percent_span)+' span</div></div>').join('')+'</div>';
+ }).join('');
+}
+function renderPerformance(rows){
+ const el=$('#performance-summary');
+ if(!rows?.length){el.innerHTML='<div class="current-empty">usage_logs 性能数据尚未发布；运行本机 publisher 后这里会直接显示 TTFT / TPS / E2E。</div>';return}
+ const rs=rows.filter(x=>Number(x.requests||0)>=20).sort((a,b)=>String(a.provider).localeCompare(String(b.provider))||Number(b.requests)-Number(a.requests)).slice(0,24);
+ el.innerHTML='<div class="perf-table"><div class="perf-row perf-head"><div>模型 / 强度</div><div class="perf-num">TTFT P50</div><div class="perf-num">TTFT P90</div><div class="perf-num">TPS P50</div><div class="perf-num">TPS P90</div><div class="perf-num">E2E P50</div></div>'+
+  rs.map(x=>'<div class="perf-row"><div class="perf-model"><strong>'+esc(providerLabel(x.provider)+' · '+x.model)+'</strong><span>'+esc(x.reasoning_effort||'default')+' · '+fmtInt(x.requests)+' req · '+fmtInt(x.ttft_samples)+' TTFT samples</span></div><div class="perf-num">'+fmtDurationMs(x.ttft_p50_ms)+'</div><div class="perf-num">'+fmtDurationMs(x.ttft_p90_ms)+'</div><div class="perf-num">'+fmtTps(x.output_tps_p50)+'</div><div class="perf-num">'+fmtTps(x.output_tps_p90)+'</div><div class="perf-num">'+fmtDurationMs(x.e2e_p50_ms)+'</div></div>').join('')+'</div>';
 }
 Promise.all([
- optionalJSON('./data/current/summary.json'),
- optionalJSON('./data/current/weekly.json'),
- optionalJSON('./data/current/models.json'),
- optionalJSON('./data/current/quota_efficiency.json'),
- optionalJSON('./data/current/performance.json')
-]).then(([s,w,m,q,p])=>renderCurrent(s,w,m,q,p));
-
-Promise.all([fetch('./data/latest.json',{cache:'no-store'}).then(r=>r.json()),fetch('./data/resets.json',{cache:'no-store'}).then(r=>r.json()),fetch('./data/context.json',{cache:'no-store'}).then(r=>r.json())]).then(([d,rd,cd])=>{
- const s=d.summary;
- if(!window.__currentLoaded){
-   $('#generated').textContent=new Date(d.generated_at).toLocaleString('zh-CN',{hour12:false});
-   $('#total').textContent=fmtTok(s.total_tokens);$('#requests').textContent=fmtInt(s.requests);$('#cache').textContent=fmtPct(s.cache_hit_percent);$('#cost').textContent=fmtMoney(s.account_cost);$('#tpu').textContent=fmtTok(s.tokens_per_usd);
- }
-
- renderTree(d,'week_account_model_effort');
- renderContext(cd);
- $$('.tabs button').forEach(btn=>btn.addEventListener('click',()=>{$$('.tabs button').forEach(x=>x.classList.remove('active'));btn.classList.add('active');renderTree(d,btn.dataset.tree)}));
-
- $('#reset-cards').innerHTML='<div class="resetline"><div>累计已用</div><div class="rmeta">手动 '+s.reset_manual+' · 自动 '+s.reset_auto+'</div><div>'+s.reset_used+' 张</div></div>';
- const ev=(rd.events||[]).slice().sort((a,b)=>a.at.localeCompare(b.at));const globals=ev.filter(e=>e.type==='global_reset');$('#global-count').textContent=globals.length+' 次';
- $('#reset-timeline').innerHTML=ev.map(e=>{const kind=e.type==='global_reset'?'Global Reset':'Banked Grant';const desc=e.type==='global_reset'?'reset 前周使用 '+range(e):e.note;return'<div class="resetline"><div>'+e.at.slice(0,10)+'<span class="badge">'+kind+'</span></div><div class="rmeta">'+desc+'</div><div>人工记录</div></div>'}).join('');
-
- const weeks=(d.trees?.week_account_model_effort||[]).slice().sort((a,b)=>a.index-b.index).map(w=>({name:'W'+w.index+(w.partial?' *':''),total_tokens:w.metrics.total_tokens,account_cost:w.metrics.account_cost,token_per_dollar:w.tokens_per_usd,cache_hit:w.cache_hit_percent,requests:w.metrics.requests}));
- bench($('#week-tpu'),weeks,'token_per_dollar',x=>fmtTok(x.token_per_dollar)+' / $ <span class="small">Cache '+fmtPct(x.cache_hit)+' · '+fmtMoney(x.account_cost)+'</span>');
- bench($('#week-tokens'),weeks,'total_tokens',x=>fmtTok(x.total_tokens)+' <span class="small">'+fmtInt(x.requests)+' req · Cache '+fmtPct(x.cache_hit)+'</span>',true);
-
- const models=group(d.usage_rows,'model').sort((a,b)=>b.tpd-a.tpd);
- const modelMain=models.filter(x=>x.requests>=100);
- const modelSmall=models.filter(x=>x.requests<100);
- bench($('#models'),modelMain,'tpd',x=>fmtTok(x.tpd)+' / $ <span class="small">Cache '+fmtPct(x.cache)+' · '+fmtMoney(x.cpr)+'/req · '+fmtInt(x.requests)+' req</span>');
- $('#models-small').innerHTML=modelSmall.length?'<div class="small-sample-title">小样本，仅参考</div>'+modelSmall.map(x=>'<div class="small-sample-row"><span>'+esc(x.name)+'</span><strong>'+fmtTok(x.tpd)+' / $</strong><span>Cache '+fmtPct(x.cache)+' · '+fmtInt(x.requests)+' req</span></div>').join(''):'';
-
- const byModel=[...new Set(d.usage_rows.map(r=>r.model))].map(model=>({model,rows:d.usage_rows.filter(r=>r.model===model)}));
- $('#effort-groups').innerHTML=byModel.map(({model,rows})=>{
-   const es=group(rows,'effort').filter(x=>!['default','none'].includes(x.name)&&x.requests>=20).sort((a,b)=>b.tpd-a.tpd);
-   if(!es.length)return'';
-   const max=Math.max(...es.map(x=>x.tpd||0),1);
-   return '<div class="effort-group"><div class="model-head">'+esc(model)+'</div>'+es.map(x=>'<div class="brow"><div class="bname">'+esc(x.name)+'</div><div class="barwrap"><div class="bar alt" style="width:'+((x.tpd||0)/max*100)+'%"></div></div><div class="bvalue">'+fmtTok(x.tpd)+' / $ <span class="small">Cache '+fmtPct(x.cache)+' · '+fmtMoney(x.cpr)+'/req · '+fmtInt(x.requests)+' req</span></div></div>').join('')+'</div>';
- }).join('');
-
- const contextRows={ '1M':[], '272K':[] };
- for(const row of d.usage_rows){
-   const ctx=contextLabelForWeek(Number(row.week),row.model);
-   if(ctx==='1M'||ctx==='272K')contextRows[ctx].push(row);
- }
- const modelContextData=[];
- for(const ctx of ['1M','272K']){
-   for(const model of [...new Set(contextRows[ctx].map(r=>r.model))]){
-     const x=calc(contextRows[ctx].filter(r=>r.model===model));
-     modelContextData.push({ctx,model,...x});
-   }
- }
- const modelContextMax=Math.max(...modelContextData.map(x=>x.tpd||0),1);
- $('#model-context-groups').innerHTML=['1M','272K'].map(ctx=>{
-   const rows=modelContextData.filter(x=>x.ctx===ctx).sort((a,b)=>b.tpd-a.tpd);
-   const req=rows.reduce((s,x)=>s+x.requests,0);
-   return '<div class="context-model-panel"><div class="context-effort-head"><strong>'+ctx+'</strong><span>'+fmtInt(req)+' req</span></div>'+
-     rows.map(x=>'<div class="brow"><div class="bname">'+esc(x.model)+'</div><div class="barwrap"><div class="bar '+(ctx==='272K'?'':'alt')+'" style="width:'+((x.tpd||0)/modelContextMax*100)+'%"></div></div><div class="bvalue">'+fmtTok(x.tpd)+' / $ <span class="small">Cache '+fmtPct(x.cache)+' · '+fmtMoney(x.cpr)+'/req · '+fmtInt(x.requests)+' req'+(x.requests<100?' · 小样本':'')+'</span></div></div>').join('')+
-   '</div>';
- }).join('');
-
- const contextEffortData=[];
- for(const ctx of ['1M','272K']){
-   for(const model of [...new Set(contextRows[ctx].map(r=>r.model))]){
-     const rows=contextRows[ctx].filter(r=>r.model===model);
-     const efforts=group(rows,'effort').filter(x=>!['default','none'].includes(x.name)&&x.requests>=20).sort((a,b)=>b.tpd-a.tpd);
-     for(const x of efforts)contextEffortData.push({ctx,model,...x});
-   }
- }
- const contextEffortMax=Math.max(...contextEffortData.map(x=>x.tpd||0),1);
- $('#effort-context-groups').innerHTML=['1M','272K'].map(ctx=>{
-   const models=[...new Set(contextEffortData.filter(x=>x.ctx===ctx).map(x=>x.model))];
-   const ctxRows=contextEffortData.filter(x=>x.ctx===ctx);
-   const ctxReq=ctxRows.reduce((s,x)=>s+x.requests,0);
-   return '<div class="context-effort-panel"><div class="context-effort-head"><strong>'+ctx+'</strong><span>'+fmtInt(ctxReq)+' req（按思考强度样本）</span></div>'+
-     models.map(model=>{
-       const es=contextEffortData.filter(x=>x.ctx===ctx&&x.model===model);
-       return '<div class="effort-group"><div class="model-head">'+esc(model)+'</div>'+
-         es.map(x=>'<div class="brow"><div class="bname">'+esc(x.name)+'</div><div class="barwrap"><div class="bar '+(ctx==='272K'?'':'alt')+'" style="width:'+((x.tpd||0)/contextEffortMax*100)+'%"></div></div><div class="bvalue">'+fmtTok(x.tpd)+' / $ <span class="small">Cache '+fmtPct(x.cache)+' · '+fmtMoney(x.cpr)+'/req · '+fmtInt(x.requests)+' req</span></div></div>').join('')+
-       '</div>';
-     }).join('')+
-   '</div>';
- }).join('');
-
- const accs=(d.accounts||[]).map(a=>({name:a.account,tpd:a.tokens_per_usd,total:a.metrics.total_tokens,cache:a.cache_hit_percent,resets:a.resets})).sort((a,b)=>b.tpd-a.tpd);
- bench($('#accounts'),accs,'tpd',x=>fmtTok(x.tpd)+' / $ <span class="small">'+fmtTok(x.total)+' · Cache '+fmtPct(x.cache)+' · Reset Card '+(x.resets?.used||0)+'</span>');
-}).catch(err=>{document.body.innerHTML='<pre style="padding:20px">Failed to load static data\n'+String(err)+'</pre>'});
+ json('./data/current/summary.json'),
+ json('./data/current/weekly.json'),
+ json('./data/current/models.json'),
+ json('./data/current/weekly_models.json',false),
+ json('./data/current/model_effort.json',false),
+ json('./data/current/quota_efficiency.json',false),
+ json('./data/current/performance.json',false)
+]).then(([summary,weekly,models,weeklyModels,effort,quota,performance])=>{
+ const c=summary.combined||{};
+ $('#generated').textContent=new Date(summary.generated_at).toLocaleString('zh-CN',{hour12:false});
+ $('#range').textContent=(summary.range?.start_date||'—')+' ～ '+(summary.range?.end_date||'—');
+ $('#total').textContent=fmtTok(c.total_tokens);$('#requests').textContent=fmtInt(c.requests);$('#cache').textContent=fmtPct(c.cache_hit_percent);$('#cost').textContent=fmtMoney(c.cost);$('#tpu').textContent=fmtTok(c.tokens_per_usd);
+ $('#dataset-status').textContent='schema '+(summary.schema_version||'—')+' · '+esc(summary.source||'current');
+ $('#dataset-status').classList.add('live');
+ const providers=summary.providers||[];
+ $('#provider-summary').innerHTML=providers.map(p=>'<div class="provider-card"><div class="provider-name">'+providerLabel(p.provider)+'</div><div class="provider-metric"><strong>'+fmtInt(p.requests)+'</strong><span>请求</span></div><div class="provider-metric"><strong>'+fmtTok(p.total_tokens)+'</strong><span>总 Token</span></div><div class="provider-metric"><strong>'+fmtPct(p.cache_hit_percent)+'</strong><span>Cache Hit</span></div><div class="provider-metric"><strong>'+fmtTok(p.tokens_per_usd)+'</strong><span>Token / $</span></div></div>').join('');
+ const wr=(weekly||[]).map(w=>({name:w.week+(w.partial?' *':''),tokens:w.total?.total_tokens||0,requests:w.total?.requests||0,codex:(w.by_provider||[]).find(x=>x.provider==='codex')?.total_tokens||0,claude:(w.by_provider||[]).find(x=>x.provider==='claude')?.total_tokens||0}));
+ bench($('#weekly-chart'),wr,'tokens',x=>fmtTok(x.tokens)+' <span class="small">'+fmtInt(x.requests)+' req · Codex '+fmtTok(x.codex)+' · Claude '+fmtTok(x.claude)+'</span>',true);
+ renderDetail(weekly,weeklyModels||[]);
+ bench($('#provider-bench'),providers.map(p=>({name:providerLabel(p.provider),v:p.tokens_per_usd,cache:p.cache_hit_percent,req:p.requests})),'v',x=>fmtTok(x.v)+' / $ <span class="small">'+fmtInt(x.req)+' req · Cache '+fmtPct(x.cache)+'</span>');
+ const mr=(models||[]).filter(x=>Number(x.requests||0)>=20).sort((a,b)=>Number(b.tokens_per_usd||0)-Number(a.tokens_per_usd||0)).map(x=>({name:providerLabel(x.provider)+' · '+x.model,v:x.tokens_per_usd,cache:x.cache_hit_percent,req:x.requests,total:x.total_tokens}));
+ bench($('#model-bench'),mr,'v',x=>fmtTok(x.v)+' / $ <span class="small">'+fmtInt(x.req)+' req · '+fmtTok(x.total)+'</span>');
+ bench($('#model-cache'),mr.slice().sort((a,b)=>Number(b.cache||0)-Number(a.cache||0)),'cache',x=>fmtPct(x.cache)+' <span class="small">'+fmtInt(x.req)+' req</span>',true);
+ renderEffort(effort);renderQuota(quota);renderPerformance(performance);
+}).catch(err=>{
+ $('#dataset-status').textContent='数据加载失败';
+ document.body.insertAdjacentHTML('afterbegin','<div class="fatal">data/current 加载失败：'+esc(err.message)+'</div>');
+});
