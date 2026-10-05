@@ -100,6 +100,72 @@ function renderContext(c){
  ];
  bench(el,rows,'tpd',x=>fmtTok(x.tpd)+' / $ <span class="small">Cache '+fmtPct(x.cache)+' · '+fmtTok(x.tpr)+'/req · '+fmtInt(x.requests)+' req'+(x.name==='272K'&&ratio!=null?' · '+ratio.toFixed(2)+'× Token/$':'')+(x.name==='272K'&&deltaReq!=null?' · 单次 '+Math.abs(deltaReq).toFixed(1)+'% 更短':'')+'</span>',true);
 }
+function fmtDurationMs(n){
+ if(n==null||!Number.isFinite(Number(n)))return'—';
+ n=Number(n);
+ return n>=1000?(n/1000).toFixed(n>=10000?1:2)+'s':Math.round(n)+'ms';
+}
+function fmtTps(n){return n==null||!Number.isFinite(Number(n))?'—':new Intl.NumberFormat('en-US',{maximumFractionDigits:0}).format(Number(n))}
+async function optionalJSON(url){
+ try{const r=await fetch(url,{cache:'no-store'});if(!r.ok)return null;return await r.json()}catch{return null}
+}
+function providerLabel(v){return v==='codex'?'Codex':v==='claude'?'Claude':v}
+function renderCurrent(summary,quota,perf){
+ const status=$('#current-status'),content=$('#current-content'),empty=$('#current-empty');
+ if(!summary||!Array.isArray(summary.providers)||!summary.providers.length){
+   if(status)status.textContent='等待最新脱敏快照';
+   if(content)content.hidden=true;
+   if(empty)empty.hidden=false;
+   return;
+ }
+ if(status){
+   status.textContent='updated '+new Date(summary.generated_at).toLocaleString('zh-CN',{hour12:false});
+   status.classList.add('live');
+ }
+ if(empty)empty.hidden=true;
+ if(content)content.hidden=false;
+
+ const providers=summary.providers||[];
+ $('#provider-summary').innerHTML=providers.map(p=>'<div class="provider-card">'+
+   '<div class="provider-name">'+esc(providerLabel(p.provider))+'</div>'+
+   '<div class="provider-metric"><strong>'+fmtInt(p.requests)+'</strong><span>请求</span></div>'+
+   '<div class="provider-metric"><strong>'+fmtTok(p.total_tokens)+'</strong><span>总 Token</span></div>'+
+   '<div class="provider-metric"><strong>'+fmtPct(p.cache_hit_percent)+'</strong><span>Cache Hit</span></div>'+
+   '<div class="provider-metric"><strong>'+fmtTok(p.tokens_per_usd)+'</strong><span>Token / $</span></div>'+
+ '</div>').join('');
+
+ const qrows=quota?.by_provider||[];
+ $('#quota-efficiency').innerHTML=providers.map(p=>{
+   const rows=qrows.filter(q=>q.provider===p.provider);
+   if(!rows.length)return '<div class="quota-provider"><div class="quota-provider-head"><span>'+esc(providerLabel(p.provider))+'</span><span class="small">暂无窗口样本</span></div></div>';
+   return '<div class="quota-provider"><div class="quota-provider-head"><span>'+esc(providerLabel(p.provider))+'</span><span class="small">实际利用率样本</span></div>'+
+     rows.map(q=>'<div class="quota-row">'+
+       '<strong>'+esc(q.window)+'</strong>'+
+       '<div><strong>'+fmtTok(q.tokens_per_1pct_weighted)+'</strong><span> Token / 1%</span></div>'+
+       '<div><strong>'+fmtTok(q.equivalent_100pct_tokens)+'</strong><span> 100% 等价 Token</span></div>'+
+       '<div class="perf-num">'+(q.observed_percent_span?fmtPct(q.observed_percent_span):'—')+' span</div>'+
+     '</div>').join('')+
+   '</div>';
+ }).join('');
+
+ const prows=(Array.isArray(perf)?perf:[]).filter(x=>Number(x.requests||0)>=20)
+   .sort((a,b)=>String(a.provider).localeCompare(String(b.provider))||Number(b.requests||0)-Number(a.requests||0));
+ const head='<div class="perf-row perf-head"><div>模型 / 强度</div><div class="perf-num">TTFT P50</div><div class="perf-num">TTFT P90</div><div class="perf-num">TPS P50</div><div class="perf-num">TPS P90</div><div class="perf-num">E2E P50</div></div>';
+ $('#performance-summary').innerHTML='<div class="perf-table">'+head+prows.slice(0,18).map(x=>
+   '<div class="perf-row"><div class="perf-model"><strong>'+esc(x.model||'—')+'</strong><span>'+esc(providerLabel(x.provider))+' · '+esc(x.reasoning_effort||'default')+' · '+fmtInt(x.requests)+' req</span></div>'+
+   '<div class="perf-num">'+fmtDurationMs(x.ttft_p50_ms)+'</div>'+
+   '<div class="perf-num">'+fmtDurationMs(x.ttft_p90_ms)+'</div>'+
+   '<div class="perf-num">'+fmtTps(x.output_tps_p50)+'</div>'+
+   '<div class="perf-num">'+fmtTps(x.output_tps_p90)+'</div>'+
+   '<div class="perf-num">'+fmtDurationMs(x.e2e_p50_ms)+'</div></div>'
+ ).join('')+'</div>';
+}
+Promise.all([
+ optionalJSON('./data/current/summary.json'),
+ optionalJSON('./data/current/quota_efficiency.json'),
+ optionalJSON('./data/current/performance.json')
+]).then(([s,q,p])=>renderCurrent(s,q,p));
+
 Promise.all([fetch('./data/latest.json',{cache:'no-store'}).then(r=>r.json()),fetch('./data/resets.json',{cache:'no-store'}).then(r=>r.json()),fetch('./data/context.json',{cache:'no-store'}).then(r=>r.json())]).then(([d,rd,cd])=>{
  const s=d.summary;
  $('#generated').textContent=new Date(d.generated_at).toLocaleString('zh-CN',{hour12:false});
