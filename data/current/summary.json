@@ -1,0 +1,55 @@
+{
+  "schema_version": 2,
+  "generated_at": "2026-10-05T02:28:45.529Z",
+  "range": {
+    "start_date": "2026-09-05",
+    "end_date": "2026-10-05",
+    "timezone": "Asia/Shanghai"
+  },
+  "source": "sub2api_gateway_usage_v1",
+  "combined": {
+    "requests": 33763,
+    "input_tokens": 304050935,
+    "output_tokens": 15957081,
+    "cache_creation_tokens": 26452243,
+    "cache_read_tokens": 5134567744,
+    "total_tokens": 5481028003,
+    "cost": 3768.5738938500003,
+    "tokens_per_usd": 1454403.7499024717,
+    "tokens_per_request": 162338.2994105974,
+    "cost_per_request": 0.11161845493143382,
+    "cache_hit_percent": 93.95244484990052
+  },
+  "providers": [
+    {
+      "provider": "codex",
+      "requests": 29895,
+      "input_tokens": 301383541,
+      "output_tokens": 10255932,
+      "cache_creation_tokens": 0,
+      "cache_read_tokens": 4605400064,
+      "total_tokens": 4917039537,
+      "cost": 3383.2162234,
+      "tokens_per_usd": 1453362.48478336,
+      "tokens_per_request": 164476.9873557451,
+      "cost_per_request": 0.11316996900485031,
+      "cache_hit_percent": 93.85781878188206,
+      "average_duration_ms": 16665.966549590234
+    },
+    {
+      "provider": "claude",
+      "requests": 3868,
+      "input_tokens": 2667394,
+      "output_tokens": 5701149,
+      "cache_creation_tokens": 26452243,
+      "cache_read_tokens": 529167680,
+      "total_tokens": 563988466,
+      "cost": 385.35767045,
+      "tokens_per_usd": 1463545.45205083,
+      "tokens_per_request": 145808.80713547053,
+      "cost_per_request": 0.09962711231902792,
+      "cache_hit_percent": 94.78411274745115,
+      "average_duration_ms": 28122.943123061013
+    }
+  ]
+}
