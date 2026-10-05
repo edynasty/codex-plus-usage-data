@@ -5,158 +5,89 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="description" content="Anonymized real-world Codex and Claude subscription usage data">
 <title>Codex + Claude Usage Data</title>
-<link rel="stylesheet" href="./assets/style.css?v=20261005-1030">
+<link rel="stylesheet" href="./assets/style.css?v=20261005-1228">
 </head>
 <body>
 <main>
   <header class="topline">
-    <div class="kicker">Codex + Claude usage / public dataset</div>
-    <div class="meta">latest <span id="generated">—</span><br>Codex + Claude 当前汇总；下方保留 9/29 Codex 历史快照</div>
+    <div>
+      <div class="kicker">Codex + Claude usage / public dataset</div>
+      <div class="title">真实订阅用量数据</div>
+    </div>
+    <div class="meta">updated <span id="generated">—</span><br><span id="range">—</span></div>
   </header>
 
-  <div class="snapshot-label">Codex + Claude · Current aggregate</div>
   <section class="summary">
     <div class="metric"><div class="value" id="total">—</div><div class="label">总 Token</div></div>
     <div class="metric"><div class="value" id="requests">—</div><div class="label">请求</div></div>
     <div class="metric"><div class="value" id="cache">—</div><div class="label">Cache Hit</div></div>
-    <div class="metric"><div class="value" id="cost">—</div><div class="label">API 等价 / Account Cost</div></div>
+    <div class="metric"><div class="value" id="cost">—</div><div class="label">API 等价 Cost</div></div>
     <div class="metric"><div class="value" id="tpu">—</div><div class="label">Token / $1</div></div>
   </section>
 
-  <section class="section current-section">
-    <div class="section-head current-head">
-      <div>
-        <div class="section-label">Codex + Claude · 最新数据</div>
-        <div class="note">直接从本机 Sub2API Gateway usage 接口读取并脱敏汇总。当前范围 2026-09-05 ～ 2026-10-05。</div>
-      </div>
-      <div id="current-status" class="dataset-status">读取最新数据…</div>
-    </div>
-
-    <div id="current-content" hidden>
-      <div id="provider-summary" class="provider-summary-grid"></div>
-
-      <div class="grid2 current-grid">
-        <div class="chart-block">
-          <div class="chart-label">总 Token · 周 · Provider</div>
-          <div class="chart-note">W5 为当前进行中的部分周；这里已经包含 Codex 和 Claude。</div>
-          <div id="current-weekly" class="bench"></div>
-        </div>
-        <div class="chart-block">
-          <div class="chart-label">Token / $ · 模型</div>
-          <div class="chart-note">使用当前 Gateway usage 的模型汇总；保留上游实际模型名，不主动合并别名。</div>
-          <div id="current-models" class="bench"></div>
-        </div>
-      </div>
-
-      <div class="grid2 current-grid">
-        <div class="chart-block">
-          <div class="chart-label">额度效率 · 5h / 7d</div>
-          <div class="chart-note">Token / 1% 需要逐请求的订阅窗口利用率。Gateway 聚合接口暂不返回历史 5h / 7d utilization，所以这里不伪造。</div>
-          <div id="quota-efficiency"></div>
-        </div>
-        <div class="chart-block">
-          <div class="chart-label">请求性能</div>
-          <div class="chart-note">Gateway 聚合接口目前只有平均 E2E；TTFT / TPS / TPOT 需要逐请求 usage log。先展示可验证的数据。</div>
-          <div id="performance-summary"></div>
-        </div>
-      </div>
-    </div>
-
-    <div id="current-empty" class="current-empty" hidden>
-      最新数据读取失败，下面仍保留 2026-09-29 的 Codex 历史快照。
-    </div>
-  </section>
-
-  <section class="section data-section">
+  <section class="section">
     <div class="section-head">
       <div>
-        <div class="section-label">Codex 历史明细 · 2026-09-29</div>
-        <div class="note">表格放在最上面。点击行逐级展开；上下文层根据 Sub2API 实际模型明细与当时实际上下文设置映射。</div>
+        <div class="section-label">Provider</div>
+        <div class="note">Codex 和 Claude 使用同一套 Token、Cache、Cost 口径。</div>
       </div>
-      <div class="tabs">
-        <button data-tree="week_account_model_effort" class="active">周 · 账号 · 模型 · 思考强度 · 上下文</button>
-        <button data-tree="week_effort_model">周 · 思考强度 · 模型 · 上下文</button>
-        <button data-tree="month_account_model">月 · 账号 · 模型</button>
-      </div>
+      <div id="dataset-status" class="dataset-status">读取数据…</div>
     </div>
-    <div class="usage-table-wrap">
-      <div id="tree" class="usage-table"></div>
-    </div>
+    <div id="provider-summary" class="provider-summary-grid"></div>
+  </section>
+
+  <section class="section">
+    <div class="section-label">周用量</div>
+    <div class="note">从 2026-09-05 连续统计。当前周标记为进行中，同时拆分 Codex / Claude。</div>
+    <div class="chart-block"><div class="chart-label">总 Token · 周</div><div id="weekly-chart" class="bench"></div></div>
   </section>
 
   <section class="section data-section">
-    <div class="section-label">重置</div>
-    <div class="reset-summary-grid">
-      <div>
-        <div class="note strong-note">Reset Card</div>
-        <div class="note">Manual / Auto 都表示成功用卡；Auto 是 sub2api 自动用卡，不是 Tibo Global Reset。</div>
-        <div id="reset-cards"></div>
-      </div>
-      <div>
-        <div class="note strong-note">Tibo / OpenAI Global Reset <span class="badge" id="global-count">—</span></div>
-        <div class="note">Global Reset 与 Reset Card 独立统计；Global Reset / Banked Grant 为人工记录。</div>
-        <div id="reset-timeline"></div>
-      </div>
-    </div>
+    <div class="section-label">用量明细 · Codex + Claude</div>
+    <div class="note">按 周 → Provider → 模型 展开。主页面只使用当前数据，不再把 2026-09-29 的旧四周快照混进来。</div>
+    <div class="usage-table-wrap"><div id="detail-tree" class="usage-table current-detail-table"></div></div>
   </section>
 
   <section class="section benchmark-section">
-    <div class="section-label">Codex 历史 Benchmark · 2026-09-29</div>
-    <div class="note">图表放在明细与重置之后。Token / $ = 总 Token ÷ Account Cost；缓存命中直接标在每一行。</div>
+    <div class="section-label">Benchmark · 当前数据</div>
+    <div class="note">全部来自 data/current/，Codex / Claude 一起统计。</div>
 
     <div class="grid2 benchmark-top">
-      <div class="chart-block">
-        <div class="chart-label">Token / $ · 模型</div>
-        <div class="chart-note">主图只放请求数 ≥ 100 的模型，小样本单独列出。</div>
-        <div class="bench" id="models"></div>
-        <div id="models-small" class="small-sample-box"></div>
-      </div>
-      <div class="chart-block">
-        <div class="chart-label">Token / $ · 思考强度（按模型）</div>
-        <div class="chart-note">同时显示 Cache Hit、$/req 和请求数。</div>
-        <div id="effort-groups"></div>
-      </div>
+      <div class="chart-block"><div class="chart-label">Token / $ · Provider</div><div id="provider-bench" class="bench"></div></div>
+      <div class="chart-block"><div class="chart-label">Token / $ · 模型</div><div id="model-bench" class="bench"></div></div>
+    </div>
+
+    <div class="grid2">
+      <div class="chart-block"><div class="chart-label">Cache Hit · 模型</div><div id="model-cache" class="bench"></div></div>
+      <div class="chart-block"><div class="chart-label">Token / $ · 模型 · 思考强度</div><div id="effort-bench"></div></div>
     </div>
 
     <div class="grid2">
       <div class="chart-block">
-        <div class="chart-label">Token / $ · 上下文</div>
-        <div class="chart-note">先只看 1M / 272K 两个上下文阶段的总体效率。</div>
-        <div class="bench" id="context-bench"></div>
+        <div class="chart-label">额度效率 · usage_logs</div>
+        <div class="chart-note">逐请求 subscription_5h/7d_used_percent 计算 Token / 1%、100% 等价 Token和窗口均值。</div>
+        <div id="quota-efficiency"></div>
       </div>
       <div class="chart-block">
-        <div class="chart-label">历史 Token / $ · 周</div>
-        <div class="bench" id="week-tpu"></div>
+        <div class="chart-label">请求性能 · usage_logs</div>
+        <div class="chart-note">TTFT=first_token_ms；E2E=duration_ms；TPS/TPOT 按 Sub2API 有效 Decode 窗口口径推导。主看 P50 / P90。</div>
+        <div id="performance-summary"></div>
       </div>
-    </div>
-
-    <div class="chart-block context-wide">
-      <div class="chart-label">Token / $ · 模型 · 上下文</div>
-      <div class="chart-note">先分 1M / 272K，再看每个模型；两边使用同一条形比例尺，小样本会直接标注。</div>
-      <div id="model-context-groups" class="context-model-grid"></div>
-    </div>
-
-    <div class="chart-block context-wide">
-      <div class="chart-label">Token / $ · 模型 · 思考强度 · 上下文</div>
-      <div class="chart-note">上下文 → 模型 → 思考强度。1M / 272K 共用同一比例尺，便于直接比较。</div>
-      <div id="effort-context-groups" class="context-effort-grid"></div>
-    </div>
-
-    <div class="chart-block">
-      <div class="chart-label">历史总 Token · 周</div>
-      <div class="bench" id="week-tokens"></div>
-    </div>
-
-    <div class="chart-block account-chart">
-      <div class="chart-label">Token / $ · 账号</div>
-      <div class="bench" id="accounts"></div>
     </div>
   </section>
 
-  <footer>
-    纯静态 HTML + JSON。公开页不调用 sub2api 管理 API；真实账号名、账号 ID、Quota 快照、凭据与管理地址未公开。数据与页面源码：<a href="https://github.com/edynasty/codex-plus-usage-data" target="_blank" rel="noreferrer">GitHub</a>。
-  </footer>
+  <section class="section archive-section">
+    <div class="section-label">Archive</div>
+    <div class="note">2026-09-29 的旧 Codex 三账号快照继续保留用于复核，但不参与当前页面统计。</div>
+    <div class="archive-links">
+      <a href="./data/latest.json">历史 latest.json</a>
+      <a href="./data/context.json">历史 context.json</a>
+      <a href="https://github.com/edynasty/codex-plus-usage-data" target="_blank" rel="noreferrer">GitHub 数据与源码</a>
+    </div>
+  </section>
+
+  <footer>公开页只读取脱敏聚合数据；真实账号名、账号 ID、凭据、Request ID、IP 与 User-Agent 不发布。</footer>
 </main>
-<script src="./assets/app.js?v=20261005-1030"></script>
+<script src="./assets/app.js?v=20261005-1228"></script>
 </body>
 </html>
