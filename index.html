@@ -3,23 +3,55 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Codex Plus usage benchmark — static snapshot">
-<title>Codex Plus Usage</title>
-<link rel="stylesheet" href="./assets/style.css?v=20260930-1415">
+<meta name="description" content="Anonymized real-world Codex and Claude subscription usage data">
+<title>Codex + Claude Usage Data</title>
+<link rel="stylesheet" href="./assets/style.css?v=20261005-0932">
 </head>
 <body>
 <main>
   <header class="topline">
-    <div class="kicker">Codex Plus usage / static snapshot</div>
-    <div class="meta">snapshot <span id="generated">—</span><br>W4 截至 9/29 22:41 左右，5.6 Sol 补测前</div>
+    <div class="kicker">Codex + Claude usage / public dataset</div>
+    <div class="meta">Codex 历史快照 <span id="generated">—</span><br>W4 截至 9/29 22:41 左右，5.6 Sol 补测前</div>
   </header>
 
+  <div class="snapshot-label">Codex · 2026-09-29 历史快照</div>
   <section class="summary">
     <div class="metric"><div class="value" id="total">—</div><div class="label">总 Token</div></div>
     <div class="metric"><div class="value" id="requests">—</div><div class="label">请求</div></div>
     <div class="metric"><div class="value" id="cache">—</div><div class="label">Cache Hit</div></div>
     <div class="metric"><div class="value" id="cost">—</div><div class="label">API 等价 / Account Cost</div></div>
     <div class="metric"><div class="value" id="tpu">—</div><div class="label">Token / $1</div></div>
+  </section>
+
+  <section class="section current-section">
+    <div class="section-head current-head">
+      <div>
+        <div class="section-label">Codex + Claude · 最新观测</div>
+        <div class="note">同一套 Sub2API 记录计算额度效率和请求性能。最新双 Provider 脱敏快照发布后，这一块会直接使用 data/current/ 数据。</div>
+      </div>
+      <div id="current-status" class="dataset-status">检查最新数据…</div>
+    </div>
+
+    <div id="current-content" hidden>
+      <div id="provider-summary" class="provider-summary-grid"></div>
+
+      <div class="grid2 current-grid">
+        <div class="chart-block">
+          <div class="chart-label">额度效率 · 5h / 7d</div>
+          <div class="chart-note">Token / 1% 来自实际窗口利用率变化；100% 等价 Token 是观察值外推，不是官方固定 Token 上限。</div>
+          <div id="quota-efficiency"></div>
+        </div>
+        <div class="chart-block">
+          <div class="chart-label">请求性能 · TTFT / TPS</div>
+          <div class="chart-note">主看 P50 / P90。TTFT 看启动速度，Output TPS 看首字之后的生成速度；E2E 同时受输出长度影响。</div>
+          <div id="performance-summary"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="current-empty" class="current-empty" hidden>
+      最新 Codex + Claude 数据还没有发布。页面结构和统计逻辑已经更新；导出最新脱敏快照后会显示 5h / 7d Token/1%、100% 等价 Token、TTFT、E2E、TPS 和 TPOT。
+    </div>
   </section>
 
   <section class="section data-section">
@@ -112,6 +144,6 @@
     纯静态 HTML + JSON。公开页不调用 sub2api 管理 API；真实账号名、账号 ID、Quota 快照、凭据与管理地址未公开。数据与页面源码：<a href="https://github.com/edynasty/codex-plus-usage-data" target="_blank" rel="noreferrer">GitHub</a>。
   </footer>
 </main>
-<script src="./assets/app.js?v=20260930-1415"></script>
+<script src="./assets/app.js?v=20261005-0932"></script>
 </body>
 </html>
