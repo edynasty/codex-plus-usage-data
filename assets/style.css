@@ -8,6 +8,7 @@ body{font-variant-numeric:tabular-nums}
 main{max-width:1500px;margin:0 auto;padding:24px 22px 56px}
 .topline{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:18px}
 .kicker{font-size:13px;font-weight:650;letter-spacing:.02em}
+.title{font-size:22px;font-weight:700;letter-spacing:-.025em;margin-top:3px}
 .meta{font-size:12px;color:var(--muted);text-align:right;line-height:1.55}
 .summary{display:grid;grid-template-columns:repeat(5,1fr);gap:18px;border-bottom:1px solid var(--line);padding:4px 0 18px;margin-bottom:24px}
 .metric .value{font-size:27px;font-weight:650;letter-spacing:-.03em}
@@ -26,6 +27,8 @@ main{max-width:1500px;margin:0 auto;padding:24px 22px 56px}
 .usage-table-wrap{overflow-x:auto;border-top:1px solid var(--line-strong);border-bottom:1px solid var(--line-strong)}
 .usage-table{min-width:1420px}
 .usage-row{display:grid;grid-template-columns:360px 82px 190px 110px 110px 92px 100px 100px 100px 130px 100px;align-items:stretch;border-bottom:1px solid var(--line);min-height:58px;background:#fff}
+.current-detail-table{min-width:1320px}
+.current-detail-row{grid-template-columns:360px 82px 105px 105px 105px 105px 115px 110px 92px 110px}
 .usage-row:last-child{border-bottom:0}
 .usage-row.has-children:hover{background:#fafafa;cursor:pointer}
 .usage-head{min-height:40px;background:#f7f8fa;color:#64748b;font-size:11px;font-weight:600;position:sticky;top:0;z-index:2}
@@ -130,7 +133,7 @@ main{max-width:1500px;margin:0 auto;padding:24px 22px 56px}
 .quota-provider{border-top:1px solid var(--line);padding:8px 0 3px}
 .quota-provider+.quota-provider{margin-top:10px}
 .quota-provider-head{display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:700;margin-bottom:4px}
-.quota-row{display:grid;grid-template-columns:40px 1fr 1fr 90px;gap:10px;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--line);font-size:10px}
+.quota-row{display:grid;grid-template-columns:40px 1fr 1fr 1fr 120px;gap:10px;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--line);font-size:10px}
 .quota-row strong{font-size:12px}
 .quota-row span{color:var(--muted)}
 .perf-table{border-top:1px solid var(--line)}
@@ -149,6 +152,10 @@ main{max-width:1500px;margin:0 auto;padding:24px 22px 56px}
 .detail-summary-note{font-size:10px;color:var(--muted);font-weight:400}
 .detail-body{padding-bottom:8px}
 footer{margin-top:34px;border-top:1px solid var(--line);padding-top:12px;font-size:11px;color:var(--muted);line-height:1.65}
+.archive-section{border-top:1px solid var(--line-strong);padding-top:18px}
+.archive-links{display:flex;gap:16px;flex-wrap:wrap;font-size:11px}
+.archive-links a{color:#475569;text-decoration:none;border-bottom:1px solid #cbd5e1}
+.fatal{max-width:1500px;margin:0 auto;padding:10px 22px;background:#fff7ed;color:#9a3412;border-bottom:1px solid #fed7aa;font-size:12px}
 
 @media(max-width:1100px){
   .grid2,.context-chart-grid,.context-model-grid,.context-effort-grid,.provider-summary-grid{grid-template-columns:1fr}
