@@ -4,6 +4,8 @@
   Cache-Control: no-cache, max-age=0
 /data/context.json
   Cache-Control: no-cache, max-age=0
+/data/current/*
+  Cache-Control: no-cache, max-age=0, must-revalidate
 /assets/*
   Cache-Control: no-cache, max-age=0, must-revalidate
 /*
