@@ -39,7 +39,50 @@
 - `data/model_effort.csv` — 模型 × 思考强度。
 - `data/model_effort_context.csv` — 上下文 × 模型 × 思考强度。
 
-指标定义和数据限制见 [统计说明](docs/methodology.zh-CN.md)。
+数据定义见 [统计说明](docs/methodology.zh-CN.md)，额度和性能指标见 [指标说明](docs/metrics.zh-CN.md)。
+
+## 最新数据更新方式
+
+现在仓库里已经加入 **Codex + Claude** 的脱敏导出和统计脚本。当前已经发布的主快照仍然是 2026-09-29 的 Codex 数据；要更新到最新数据，需要在已经登录 Sub2API 的浏览器里导出一次当前记录：
+
+1. 打开已经登录的 Sub2API 管理页面。
+2. 在这个页面的 DevTools Console 运行 `scripts/sub2api-browser-export.js`。
+3. 浏览器会下载脱敏后的 `sub2api-public-source-YYYY-MM-DD.json`。
+4. 再生成公开统计：
+
+```bash
+node scripts/build-current.mjs sub2api-public-source-YYYY-MM-DD.json data/current
+```
+
+导出脚本只借用当前浏览器登录状态访问本机 Sub2API API，不会把登录 Token、凭据、用户邮箱、Request ID、IP 或 User-Agent 写进公开文件。
+
+生成的数据会同时包含 Codex 和 Claude，并统计模型、思考强度、额度效率和请求性能。
+
+### 新增额度指标
+
+只要 Sub2API 的用量记录中存在订阅窗口百分比，就会计算：
+
+- **5h Token / 1%**
+- **7d Token / 1%**
+- **5h 100% 等价 Token**
+- **7d 100% 等价 Token**
+- Output Token / 1%
+- Cache Read Token / 1%
+- API 等价成本 / 1%
+
+这里我更倾向叫“100% 等价 Token”，而不是直接叫“额度 Token”，因为它是根据真实利用率变化推算出来的观察值，不代表 OpenAI / Anthropic 官方存在一个固定 Token 上限。具体见 [指标说明](docs/metrics.zh-CN.md)。
+
+### 请求性能
+
+最新数据也会按 Provider / 模型 / 思考强度统计：
+
+- TTFT / 首字时间
+- E2E / 总耗时
+- Output TPS
+- TPOT
+- Output Token 数
+
+延迟和速度主要看 P50 / P90，比单独一个平均数更有参考价值。
 
 ## 在线页面源码
 
