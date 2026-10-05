@@ -39,7 +39,49 @@ The canonical public snapshot is under `data/`.
 - `data/model_effort.csv` — model × reasoning-effort summary.
 - `data/model_effort_context.csv` — context × model × reasoning-effort summary.
 
-See [Methodology](docs/methodology.md) for metric definitions and interpretation notes.
+See [Methodology](docs/methodology.md) for dataset definitions and [Metrics](docs/metrics.md) for quota-efficiency and request-performance metrics.
+
+## Current refresh pipeline
+
+The original published snapshot is still the 2026-09-29 Codex dataset. The repository now also contains a privacy-preserving refresh pipeline for **Codex + Claude**:
+
+1. Open the already-authenticated Sub2API admin page.
+2. Run `scripts/sub2api-browser-export.js` in that page's DevTools console.
+3. The script downloads a sanitized `sub2api-public-source-YYYY-MM-DD.json`.
+4. Build public aggregates:
+
+```bash
+node scripts/build-current.mjs sub2api-public-source-YYYY-MM-DD.json data/current
+```
+
+The browser exporter reads the existing authenticated session only to call local Sub2API APIs. Authentication tokens, credentials, user emails, request IDs, IP addresses and user agents are not written to the export.
+
+The generated current dataset includes provider/model/reasoning-effort summaries, request-performance percentiles, and observed 5h/7d quota efficiency.
+
+### New quota metrics
+
+When Sub2API has subscription-window samples, the current-data builder calculates:
+
+- **5h Token / 1%**
+- **7d Token / 1%**
+- **5h 100% equivalent tokens**
+- **7d 100% equivalent tokens**
+- output/cache-read tokens per 1%
+- API-equivalent cost per 1%
+
+“100% equivalent tokens” is an observed extrapolation, not an official fixed token quota. See [Metrics](docs/metrics.md).
+
+### Request performance
+
+The current-data builder also aggregates:
+
+- TTFT / first-token latency
+- E2E request duration
+- Output TPS
+- TPOT
+- output-token count
+
+P50 and P90 are preferred for comparisons because latency is heavy-tailed.
 
 ## Web visualization source
 
