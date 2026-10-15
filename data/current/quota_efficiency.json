@@ -33,6 +33,40 @@
       "cache_creation_tokens_per_1pct": 0,
       "cache_read_tokens_per_1pct": 3156740.882002384,
       "api_equivalent_cost_per_1pct": 0.9520035341358765
+    },
+    {
+      "provider": "claude",
+      "window": "5h",
+      "accounts": 1,
+      "window_samples": 16,
+      "observed_percent_span": 970,
+      "tokens_per_1pct_weighted": 772238.5381443299,
+      "tokens_per_1pct_window_median": 733862.1244186047,
+      "equivalent_100pct_tokens": 77223853.814433,
+      "equivalent_100pct_tokens_avg_window": 71873235.23854657,
+      "equivalent_100pct_tokens_median_window": 73386212.44186047,
+      "input_tokens_per_1pct": 2689.2865979381445,
+      "output_tokens_per_1pct": 6354.042268041238,
+      "cache_creation_tokens_per_1pct": 30467.10206185567,
+      "cache_read_tokens_per_1pct": 732728.1072164949,
+      "api_equivalent_cost_per_1pct": 0.39716457144329886
+    },
+    {
+      "provider": "claude",
+      "window": "7d",
+      "accounts": 1,
+      "window_samples": 2,
+      "observed_percent_span": 130,
+      "tokens_per_1pct_weighted": 5829205.553846153,
+      "tokens_per_1pct_window_median": 5746494.85375,
+      "equivalent_100pct_tokens": 582920555.3846153,
+      "equivalent_100pct_tokens_avg_window": 574649485.375,
+      "equivalent_100pct_tokens_median_window": 574649485.375,
+      "input_tokens_per_1pct": 21992.123076923075,
+      "output_tokens_per_1pct": 48612.47692307692,
+      "cache_creation_tokens_per_1pct": 239942.33076923076,
+      "cache_read_tokens_per_1pct": 5518658.623076923,
+      "api_equivalent_cost_per_1pct": 3.0537121515384618
     }
   ]
 }
