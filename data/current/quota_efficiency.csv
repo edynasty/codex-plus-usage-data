@@ -1,0 +1,3 @@
+provider,window,accounts,window_samples,observed_percent_span,tokens_per_1pct_weighted,tokens_per_1pct_window_median,equivalent_100pct_tokens,equivalent_100pct_tokens_avg_window,equivalent_100pct_tokens_median_window,input_tokens_per_1pct,output_tokens_per_1pct,cache_creation_tokens_per_1pct,cache_read_tokens_per_1pct,api_equivalent_cost_per_1pct
+codex,5h,3,149,10663,497836.60030010313,512614.01,49783660.03001031,48375679.02504416,51261401,20559.97252180437,1107.5286504736002,0,476169.0991278252,0.13174113309950292
+codex,7d,3,23,1678,3306024.413587604,3336088.64,330602441.3587604,324307871.77399164,333608864,141868.43742550656,7415.094159713945,0,3156740.882002384,0.9520035341358765
