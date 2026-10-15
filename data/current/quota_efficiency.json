@@ -40,16 +40,16 @@
       "accounts": 1,
       "window_samples": 16,
       "observed_percent_span": 970,
-      "tokens_per_1pct_weighted": 772238.5381443299,
-      "tokens_per_1pct_window_median": 733862.1244186047,
-      "equivalent_100pct_tokens": 77223853.814433,
-      "equivalent_100pct_tokens_avg_window": 71873235.23854657,
-      "equivalent_100pct_tokens_median_window": 73386212.44186047,
-      "input_tokens_per_1pct": 2689.2865979381445,
-      "output_tokens_per_1pct": 6354.042268041238,
-      "cache_creation_tokens_per_1pct": 30467.10206185567,
-      "cache_read_tokens_per_1pct": 732728.1072164949,
-      "api_equivalent_cost_per_1pct": 0.39716457144329886
+      "tokens_per_1pct_weighted": 600487.8422680412,
+      "tokens_per_1pct_window_median": 573047.0665842094,
+      "equivalent_100pct_tokens": 60048784.22680412,
+      "equivalent_100pct_tokens_avg_window": 58898682.065941125,
+      "equivalent_100pct_tokens_median_window": 57304706.65842095,
+      "input_tokens_per_1pct": 2646.5628865979384,
+      "output_tokens_per_1pct": 5150.9649484536085,
+      "cache_creation_tokens_per_1pct": 25342.51855670103,
+      "cache_read_tokens_per_1pct": 567347.7958762887,
+      "api_equivalent_cost_per_1pct": 0.31437537824742273
     },
     {
       "provider": "claude",
@@ -57,16 +57,16 @@
       "accounts": 1,
       "window_samples": 2,
       "observed_percent_span": 130,
-      "tokens_per_1pct_weighted": 5829205.553846153,
-      "tokens_per_1pct_window_median": 5746494.85375,
-      "equivalent_100pct_tokens": 582920555.3846153,
-      "equivalent_100pct_tokens_avg_window": 574649485.375,
-      "equivalent_100pct_tokens_median_window": 574649485.375,
-      "input_tokens_per_1pct": 21992.123076923075,
-      "output_tokens_per_1pct": 48612.47692307692,
-      "cache_creation_tokens_per_1pct": 239942.33076923076,
-      "cache_read_tokens_per_1pct": 5518658.623076923,
-      "api_equivalent_cost_per_1pct": 3.0537121515384618
+      "tokens_per_1pct_weighted": 4535684.230769231,
+      "tokens_per_1pct_window_median": 4695508.7787500005,
+      "equivalent_100pct_tokens": 453568423.0769231,
+      "equivalent_100pct_tokens_avg_window": 469550877.875,
+      "equivalent_100pct_tokens_median_window": 469550877.875,
+      "input_tokens_per_1pct": 21673.215384615385,
+      "output_tokens_per_1pct": 39577.515384615384,
+      "cache_creation_tokens_per_1pct": 201449.3,
+      "cache_read_tokens_per_1pct": 4272984.2,
+      "api_equivalent_cost_per_1pct": 2.43119849
     }
   ]
 }

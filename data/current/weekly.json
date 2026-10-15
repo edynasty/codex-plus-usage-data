@@ -159,17 +159,17 @@
     "end": "2026-10-09",
     "partial": false,
     "total": {
-      "requests": 26616,
-      "input_tokens": 147623518,
-      "output_tokens": 12892541,
-      "cache_creation_tokens": 23363280,
-      "cache_read_tokens": 3831022198,
-      "total_tokens": 4014901537,
-      "cost": 1485.279306060005,
-      "tokens_per_usd": 2703128.9809391573,
-      "tokens_per_request": 150845.41392395552,
-      "cost_per_request": 0.055804001580252664,
-      "cache_hit_percent": 95.72747592094618
+      "requests": 25647,
+      "input_tokens": 147582060,
+      "output_tokens": 11717996,
+      "cache_creation_tokens": 18359186,
+      "cache_read_tokens": 3669084523,
+      "total_tokens": 3846743765,
+      "cost": 1404.3525300600024,
+      "tokens_per_usd": 2739158.211817117,
+      "tokens_per_request": 149988.05961710922,
+      "cost_per_request": 0.05475699029360168,
+      "cache_hit_percent": 95.6730083187089
     },
     "by_provider": [
       {
@@ -188,17 +188,17 @@
       },
       {
         "provider": "claude",
-        "requests": 3726,
-        "input_tokens": 2691140,
-        "output_tokens": 5645393,
-        "cache_creation_tokens": 23363280,
-        "cache_read_tokens": 541628278,
-        "total_tokens": 573328091,
-        "cost": 327.50930710000085,
-        "tokens_per_usd": 1750570.376386102,
-        "tokens_per_request": 153872.27348362855,
-        "cost_per_request": 0.08789836476113817,
-        "cache_hit_percent": 95.41039033040954
+        "requests": 2757,
+        "input_tokens": 2649682,
+        "output_tokens": 4470848,
+        "cache_creation_tokens": 18359186,
+        "cache_read_tokens": 379690603,
+        "total_tokens": 405170319,
+        "cost": 246.58253109999993,
+        "tokens_per_usd": 1643142.8341356665,
+        "tokens_per_request": 146960.57997823722,
+        "cost_per_request": 0.08943871276750089,
+        "cache_hit_percent": 94.75695140111627
       }
     ]
   },
