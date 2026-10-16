@@ -202,39 +202,68 @@ function sortTable(el,cols,rows,opts={}){
  };
  draw();
 }
-// ---- 小型 SVG 趋势图：每个指标独立刻度 ----
-function sparkline(series,{label,fmt,color='#8fb6c9',w=340,h=104,unit=''}){
- const pts=series.map((s,i)=>({i,label:s.label,v:Number(s.v),partial:!!s.partial})).filter(p=>Number.isFinite(p.v));
- if(pts.length<2)return '<div class="trend-card"><div class="trend-card-label">'+esc(label)+'</div><div class="trend-empty">数据不足</div></div>';
- const vals=pts.map(p=>p.v),min=Math.min(...vals),max=Math.max(...vals),span=(max-min)||1;
- const L=34,R=10,T=10,B=20;
- const X=i=>L+i*(w-L-R)/Math.max(1,series.length-1);
+// ---- 订阅口径趋势：维度对比（账号 / 模型 / 思考强度 / Provider）× 指标 ----
+const DIM_TREND_METRICS = [
+  {key:'total_tokens',label:'总 Token',fmt:v=>fmtTok(v)},
+  {key:'cache_hit_percent',label:'Cache Hit',fmt:v=>fmtPct(v)},
+  {key:'tokens_per_usd',label:'Token / $',fmt:v=>fmtTok(v)},
+  {key:'output_tps_p50',label:'TPS P50',fmt:v=>fmtTps(v)},
+  {key:'ttft_p50_ms',label:'TTFT P50',fmt:v=>fmtDurationMs(v)},
+  {key:'requests',label:'请求',fmt:v=>fmtInt(v)},
+];
+const DIM_TREND_COLORS=['#8fb6c9','#d8a48f','#a3b18a','#b8a1c9','#e0b1a1','#9fb3c8','#c9c19f','#a1c9b8'];
+let dimTrendState={dim:'by_account',metric:'total_tokens'};
+function multiSeriesChart(points,metric,fmt){
+ const weeks=[...new Set(points.map(p=>p.week))].sort((a,b)=>{
+   const pa=points.find(p=>p.week===a)?.start||'', pb=points.find(p=>p.week===b)?.start||'';
+   return pa.localeCompare(pb);
+ });
+ const totals=new Map();
+ for(const p of points)totals.set(p.label,(totals.get(p.label)||0)+Number(p[metric]||0));
+ const labels=[...totals].sort((a,b)=>b[1]-a[1]).slice(0,8).map(x=>x[0]);
+ if(!labels.length)return '<div class="current-empty">暂无对比数据</div>';
+ const sel=points.filter(p=>labels.includes(p.label)&&Number.isFinite(Number(p[metric])));
+ const vals=sel.map(p=>Number(p[metric]));
+ if(!vals.length)return '<div class="current-empty">该指标暂无数据</div>';
+ const min=Math.min(...vals),max=Math.max(...vals),span=(max-min)||1;
+ const w=1400,h=260,L=64,R=16,T=14,B=30;
+ const X=i=>L+i*(w-L-R)/Math.max(1,weeks.length-1);
  const Y=v=>h-B-((v-min)/span)*(h-T-B);
- const path=pts.map((p,k)=>(k?'L':'M')+X(p.i).toFixed(1)+' '+Y(p.v).toFixed(1)).join(' ');
- const area=path+' L'+X(pts[pts.length-1].i).toFixed(1)+' '+(h-B)+' L'+X(pts[0].i).toFixed(1)+' '+(h-B)+' Z';
- const last=pts[pts.length-1];
- return '<div class="trend-card"><div class="trend-card-label">'+esc(label)+'<span class="trend-card-last">'+esc(fmt(last.v))+(unit?' '+esc(unit):'')+'</span></div>'+
-  '<svg class="trend-svg" viewBox="0 0 '+w+' '+h+'" role="img" aria-label="'+esc(label)+'">'+
-  '<path class="trend-area" d="'+area+'" fill="'+color+'" opacity="0.10"/>'+
-  '<path class="trend-line" d="'+path+'" fill="none" stroke="'+color+'" stroke-width="1.6" stroke-linejoin="round"/>'+
-  pts.map(p=>'<circle cx="'+X(p.i).toFixed(1)+'" cy="'+Y(p.v).toFixed(1)+'" r="2.2" fill="'+color+'"'+(p.partial?' opacity="0.45"':'')+'><title>'+esc(p.label+': '+fmt(p.v))+'</title></circle>').join('')+
-  '<text class="trend-axis" x="'+(L-4)+'" y="'+(Y(max)+3)+'" text-anchor="end">'+esc(fmt(max))+'</text>'+
-  '<text class="trend-axis" x="'+(L-4)+'" y="'+(Y(min)+3)+'" text-anchor="end">'+esc(fmt(min))+'</text>'+
-  '<text class="trend-axis" x="'+X(pts[0].i)+'" y="'+(h-6)+'" text-anchor="middle">'+esc(series[0].label)+'</text>'+
-  '<text class="trend-axis" x="'+X(last.i)+'" y="'+(h-6)+'" text-anchor="end">'+esc(last.label)+'</text>'+
-  '</svg></div>';
+ const color=lab=>DIM_TREND_COLORS[labels.indexOf(lab)%DIM_TREND_COLORS.length];
+ const paths=labels.map(lab=>{
+   const pts=weeks.map((wk,i)=>{
+     const p=sel.find(x=>x.week===wk&&x.label===lab);
+     return p?{i,v:Number(p[metric]),partial:p.partial}:null;
+   }).filter(Boolean);
+   if(pts.length<2)return '';
+   return '<path d="'+pts.map((p,k)=>(k?'L':'M')+X(p.i).toFixed(1)+' '+Y(p.v).toFixed(1)).join(' ')+'" fill="none" stroke="'+color(lab)+'" stroke-width="1.7" stroke-linejoin="round"/>'+
+     pts.map(p=>'<circle cx="'+X(p.i).toFixed(1)+'" cy="'+Y(p.v).toFixed(1)+'" r="2.4" fill="'+color(lab)+'"'+(p.partial?' opacity="0.45"':'')+'><title>'+esc(lab+' · '+weeks[p.i]+': '+fmt(p.v))+'</title></circle>').join('');
+ }).join('');
+ const grid=[0,0.25,0.5,0.75,1].map(f=>{
+   const v=min+span*f,y=Y(v);
+   return '<line x1="'+L+'" x2="'+(w-R)+'" y1="'+y.toFixed(1)+'" y2="'+y.toFixed(1)+'" stroke="var(--line)" stroke-width="1"/>'+
+     '<text class="trend-axis" x="'+(L-6)+'" y="'+(y+3).toFixed(1)+'" text-anchor="end">'+esc(fmt(v))+'</text>';
+ }).join('');
+ const xlabels=weeks.map((wk,i)=>'<text class="trend-axis" x="'+X(i).toFixed(1)+'" y="'+(h-10)+'" text-anchor="middle">'+esc(wk)+'</text>').join('');
+ const legend=labels.map(lab=>'<span class="dim-legend-item"><i style="background:'+color(lab)+'"></i>'+esc(lab)+'</span>').join('');
+ return '<div class="dim-legend">'+legend+'</div><svg class="trend-svg dim-svg" viewBox="0 0 '+w+' '+h+'" role="img" aria-label="维度对比趋势">'+grid+paths+xlabels+'</svg>';
 }
-function renderTrendCharts(rows){
+function renderDimensionTrend(dims){
  const el=$('#trend-charts');if(!el)return;
- if(!rows?.length){el.innerHTML='<div class="current-empty">周趋势数据尚未生成</div>';return}
- const s=rows.map(r=>({label:r.week+(r.partial?'*':''),partial:r.partial,v:null}));
- const mk=(field,fmt,color,label,unit)=>sparkline(rows.map(r=>({label:r.week+(r.partial?'*':''),v:r[field],partial:r.partial})),{label,fmt,color,unit});
- el.innerHTML='<div class="trend-grid">'+
-  mk('total_tokens',v=>fmtTok(v),'#8fb6c9','总 Token · 周')+
-  mk('cache_hit_percent',v=>fmtPct(v),'#8fb6c9','Cache Hit · 周')+
-  mk('tokens_per_usd',v=>fmtTok(v),'#d8a48f','Token / $ · 周')+
-  mk('output_tps_p50',v=>fmtTps(v),'#d8a48f','TPS P50 · 周')+
-  '</div>';
+ if(!dims){el.innerHTML='<div class="current-empty">维度趋势数据尚未生成</div>';return}
+ const dimsAvailable=[
+  ['by_account','账号'],['by_model','模型'],['by_effort','思考强度'],['by_provider','Provider'],
+ ].filter(([k])=>Array.isArray(dims[k])&&dims[k].length);
+ if(!dimsAvailable.length){el.innerHTML='<div class="current-empty">维度趋势数据为空</div>';return}
+ if(!dimsAvailable.some(([k])=>k===dimTrendState.dim))dimTrendState.dim=dimsAvailable[0][0];
+ if(!DIM_TREND_METRICS.some(m=>m.key===dimTrendState.metric))dimTrendState.metric='total_tokens';
+ const metric=DIM_TREND_METRICS.find(m=>m.key===dimTrendState.metric);
+ const dimBtns=dimsAvailable.map(([k,label])=>'<button class="dim-btn'+(dimTrendState.dim===k?' active':'')+'" data-dim="'+k+'">'+esc(label)+'</button>').join('');
+ const metBtns=DIM_TREND_METRICS.map(m=>'<button class="dim-btn'+(dimTrendState.metric===m.key?' active':'')+'" data-metric="'+m.key+'">'+esc(m.label)+'</button>').join('');
+ el.innerHTML='<div class="dim-controls"><div class="dim-group"><span class="dim-group-label">对比维度</span>'+dimBtns+'</div><div class="dim-group"><span class="dim-group-label">指标</span>'+metBtns+'</div></div>'+
+  multiSeriesChart(dims[dimTrendState.dim],dimTrendState.metric,metric.fmt);
+ el.querySelectorAll('[data-dim]').forEach(b=>b.addEventListener('click',()=>{dimTrendState.dim=b.dataset.dim;renderDimensionTrend(dims)}));
+ el.querySelectorAll('[data-metric]').forEach(b=>b.addEventListener('click',()=>{dimTrendState.metric=b.dataset.metric;renderDimensionTrend(dims)}));
 }
 function renderQuotaModelEffort(rows){
  const el=$('#quota-model-effort');if(!el)return;
@@ -288,9 +317,10 @@ Promise.all([
   json('./data/current/weekly_trend.json',false),
   json('./data/current/quota_model_effort.json',false),
   json('./data/current/credits.json',false),
+  json('./data/current/weekly_dimensions.json',false),
   json('./data/latest.json',false),
   json('./data/context.json',false)
-]).then(([summary,weekly,models,weeklyModels,effort,quota,performance,weeklyTrend,quotaModelEffort,credits,historicalLatest,contextData])=>{
+]).then(([summary,weekly,models,weeklyModels,effort,quota,performance,weeklyTrend,quotaModelEffort,credits,weeklyDimensions,historicalLatest,contextData])=>{
  const c=summary.combined||{};
  $('#generated').textContent=new Date(summary.generated_at).toLocaleString('zh-CN',{hour12:false});
  $('#range').textContent=(summary.range?.start_date||'—')+' ～ '+(summary.range?.end_date||'—');
@@ -316,7 +346,7 @@ Promise.all([
  renderContextComparison(contextData);
  renderQuota(quota);
  renderPerformance(performance,summary);
- renderTrendCharts(weeklyTrend||[]);
+ renderDimensionTrend(weeklyDimensions);
  renderQuotaModelEffort(quotaModelEffort||[]);
  renderCredits(credits);
 }).catch(err=>{
