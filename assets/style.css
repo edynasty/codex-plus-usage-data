@@ -222,3 +222,6 @@ footer{margin-top:34px;border-top:1px solid var(--line);padding-top:12px;font-si
 .dim-legend-item{display:inline-flex;align-items:center;gap:5px}
 .dim-legend-item i{width:10px;height:3px;display:inline-block}
 .dim-svg{margin-top:4px}
+
+.dim-legend-hint{color:var(--muted);font-size:10px;border-right:1px solid var(--line);padding-right:12px;margin-right:2px}
+.dim-legend-item i{width:14px;height:3px;display:inline-block}

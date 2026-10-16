@@ -218,26 +218,34 @@ function multiSeriesChart(points,metric,fmt){
    const pa=points.find(p=>p.week===a)?.start||'', pb=points.find(p=>p.week===b)?.start||'';
    return pa.localeCompare(pb);
  });
+ // 系列以 key 唯一标识（同一 label 可能分属 Codex / Claude，必须分开画）
  const totals=new Map();
- for(const p of points)totals.set(p.label,(totals.get(p.label)||0)+Number(p[metric]||0));
- const labels=[...totals].sort((a,b)=>b[1]-a[1]).slice(0,8).map(x=>x[0]);
- if(!labels.length)return '<div class="current-empty">暂无对比数据</div>';
- const sel=points.filter(p=>labels.includes(p.label)&&Number.isFinite(Number(p[metric])));
+ for(const p of points)totals.set(p.key,(totals.get(p.key)||0)+Number(p[metric]||0));
+ const ids=[...totals].sort((a,b)=>b[1]-a[1]).slice(0,10).map(x=>x[0]);
+ if(!ids.length)return '<div class="current-empty">暂无对比数据</div>';
+ const meta=id=>points.find(p=>p.key===id)||{};
+ const disp=p=>{
+   const prov=providerLabel(p.provider);
+   return (!p.label||p.label===prov)?prov:(prov+' · '+p.label);
+ };
+ const sel=points.filter(p=>ids.includes(p.key)&&Number.isFinite(Number(p[metric])));
  const vals=sel.map(p=>Number(p[metric]));
  if(!vals.length)return '<div class="current-empty">该指标暂无数据</div>';
  const min=Math.min(...vals),max=Math.max(...vals),span=(max-min)||1;
  const w=1400,h=260,L=64,R=16,T=14,B=30;
  const X=i=>L+i*(w-L-R)/Math.max(1,weeks.length-1);
  const Y=v=>h-B-((v-min)/span)*(h-T-B);
- const color=lab=>DIM_TREND_COLORS[labels.indexOf(lab)%DIM_TREND_COLORS.length];
- const paths=labels.map(lab=>{
+ const color=id=>DIM_TREND_COLORS[ids.indexOf(id)%DIM_TREND_COLORS.length];
+ const dash=p=>p.provider==='claude'?' stroke-dasharray="6 3"':'';
+ const paths=ids.map(id=>{
    const pts=weeks.map((wk,i)=>{
-     const p=sel.find(x=>x.week===wk&&x.label===lab);
+     const p=sel.find(x=>x.week===wk&&x.key===id);
      return p?{i,v:Number(p[metric]),partial:p.partial}:null;
    }).filter(Boolean);
    if(pts.length<2)return '';
-   return '<path d="'+pts.map((p,k)=>(k?'L':'M')+X(p.i).toFixed(1)+' '+Y(p.v).toFixed(1)).join(' ')+'" fill="none" stroke="'+color(lab)+'" stroke-width="1.7" stroke-linejoin="round"/>'+
-     pts.map(p=>'<circle cx="'+X(p.i).toFixed(1)+'" cy="'+Y(p.v).toFixed(1)+'" r="2.4" fill="'+color(lab)+'"'+(p.partial?' opacity="0.45"':'')+'><title>'+esc(lab+' · '+weeks[p.i]+': '+fmt(p.v))+'</title></circle>').join('');
+   const m=meta(id);
+   return '<path d="'+pts.map((p,k)=>(k?'L':'M')+X(p.i).toFixed(1)+' '+Y(p.v).toFixed(1)).join(' ')+'" fill="none" stroke="'+color(id)+'" stroke-width="1.7" stroke-linejoin="round"'+dash(m)+'/>'+
+     pts.map(p=>'<circle cx="'+X(p.i).toFixed(1)+'" cy="'+Y(p.v).toFixed(1)+'" r="2.4" fill="'+color(id)+'"'+(p.partial?' opacity="0.45"':'')+'><title>'+esc(disp(m)+' · '+weeks[p.i]+': '+fmt(p.v))+'</title></circle>').join('');
  }).join('');
  const grid=[0,0.25,0.5,0.75,1].map(f=>{
    const v=min+span*f,y=Y(v);
@@ -245,8 +253,13 @@ function multiSeriesChart(points,metric,fmt){
      '<text class="trend-axis" x="'+(L-6)+'" y="'+(y+3).toFixed(1)+'" text-anchor="end">'+esc(fmt(v))+'</text>';
  }).join('');
  const xlabels=weeks.map((wk,i)=>'<text class="trend-axis" x="'+X(i).toFixed(1)+'" y="'+(h-10)+'" text-anchor="middle">'+esc(wk)+'</text>').join('');
- const legend=labels.map(lab=>'<span class="dim-legend-item"><i style="background:'+color(lab)+'"></i>'+esc(lab)+'</span>').join('');
- return '<div class="dim-legend">'+legend+'</div><svg class="trend-svg dim-svg" viewBox="0 0 '+w+' '+h+'" role="img" aria-label="维度对比趋势">'+grid+paths+xlabels+'</svg>';
+ const legend=ids.map(id=>{
+   const m=meta(id);
+   const style=m.provider==='claude'?'background-image:linear-gradient(90deg,'+color(id)+' 0 4px,transparent 4px 6px,'+color(id)+' 6px 10px);background-color:transparent':'background:'+color(id);
+   return '<span class="dim-legend-item"><i style="'+style+'"></i>'+esc(disp(m))+'</span>';
+ }).join('');
+ const hint='<span class="dim-legend-hint">Codex 实线 · Claude 虚线</span>';
+ return '<div class="dim-legend">'+hint+legend+'</div><svg class="trend-svg dim-svg" viewBox="0 0 '+w+' '+h+'" role="img" aria-label="维度对比趋势">'+grid+paths+xlabels+'</svg>';
 }
 function renderDimensionTrend(dims){
  const el=$('#trend-charts');if(!el)return;
