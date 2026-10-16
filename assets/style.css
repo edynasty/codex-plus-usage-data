@@ -90,8 +90,8 @@ main{max-width:1500px;margin:0 auto;padding:24px 22px 56px}
 .chart-note{font-size:10px;color:var(--muted);margin-top:-2px;margin-bottom:8px;line-height:1.45}
 .benchmark-top{align-items:start}
 .bench{border-top:1px solid var(--line)}
-.brow{display:grid;grid-template-columns:150px 1fr 335px;align-items:center;gap:14px;min-height:48px;border-bottom:1px solid var(--line)}
-.bname{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brow{display:grid;grid-template-columns:minmax(170px,1.3fr) minmax(70px,1fr) minmax(210px,auto);align-items:center;gap:14px;min-height:48px;border-bottom:1px solid var(--line)}
+.bname{font-size:12px;white-space:normal;overflow-wrap:anywhere;line-height:1.3}
 .barwrap{height:14px;background:var(--soft);position:relative;overflow:hidden}
 .bar{height:100%;background:var(--bar)}
 .bar.alt{background:var(--bar2)}
@@ -145,7 +145,7 @@ main{max-width:1500px;margin:0 auto;padding:24px 22px 56px}
 .perf-row{display:grid;grid-template-columns:minmax(150px,1.35fr) 76px 76px 76px 76px 76px;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line);font-size:10px}
 .perf-row.perf-head{color:var(--muted);font-size:9px;font-weight:600}
 .perf-model{min-width:0}
-.perf-model strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px}
+.perf-model strong{display:block;white-space:normal;overflow-wrap:anywhere;font-size:11px;line-height:1.3}
 .perf-model span{color:var(--muted)}
 .perf-num{text-align:right;white-space:nowrap}
 
@@ -192,3 +192,21 @@ footer{margin-top:34px;border-top:1px solid var(--line);padding-top:12px;font-si
 .trend-bar{height:4px;background:var(--soft);margin-top:5px;overflow:hidden;max-width:260px}
 .trend-bar i{display:block;height:100%;background:#8fb6c9}
 .perf-model .current-badge{font-size:9px;padding:0 4px;line-height:14px;margin-left:6px}
+
+/* 可排序列头 */
+.perf-head .sortable{cursor:pointer;user-select:none;white-space:nowrap}
+.perf-head .sortable:hover{color:#111827}
+.perf-head .sortable.is-sorted{color:#111827}
+.perf-head .sort-ind{display:inline-block;margin-left:4px;opacity:.55;font-size:9px}
+.perf-head .sortable.is-sorted .sort-ind{opacity:1}
+
+/* 趋势图卡片 */
+#trend-charts{margin:14px 0 18px}
+.trend-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.trend-card{border-top:1px solid var(--line);padding-top:8px}
+.trend-card-label{font-size:11px;font-weight:700;color:#374151;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.trend-card-last{font-weight:650;color:var(--ink)}
+.trend-svg{display:block;width:100%;height:auto;margin-top:6px}
+.trend-axis{font-size:9px;fill:var(--muted)}
+.trend-empty{font-size:11px;color:var(--muted);padding:18px 0}
+@media (max-width:1100px){.trend-grid{grid-template-columns:repeat(2,1fr)}}
