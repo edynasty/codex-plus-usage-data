@@ -1,0 +1,188 @@
+[
+  {
+    "week": "W1",
+    "start": "2026-09-05",
+    "end": "2026-09-11",
+    "partial": false,
+    "total_tokens": 701436860,
+    "requests": 2618,
+    "cache_hit_percent": 86.3750766896953,
+    "tokens_per_usd": 503656.50489281997,
+    "cost": 1392.6889719199962,
+    "ttft_p50_ms": 3481.5,
+    "ttft_p90_ms": 10095.5,
+    "output_tps_p50": 27.694922884256336,
+    "output_tps_p90": 50.90323410004445,
+    "e2e_p50_ms": 18074,
+    "e2e_p90_ms": 59930.900000000016,
+    "by_provider": [
+      {
+        "provider": "codex",
+        "requests": 2618,
+        "total_tokens": 701436860,
+        "cache_hit_percent": 86.3750766896953,
+        "tokens_per_usd": 503656.50489281997,
+        "cost": 1392.6889719199962
+      }
+    ]
+  },
+  {
+    "week": "W2",
+    "start": "2026-09-12",
+    "end": "2026-09-18",
+    "partial": false,
+    "total_tokens": 489669442,
+    "requests": 1321,
+    "cache_hit_percent": 89.46187023330432,
+    "tokens_per_usd": 632232.3333904861,
+    "cost": 774.5086990000005,
+    "ttft_p50_ms": 4599,
+    "ttft_p90_ms": 8429,
+    "output_tps_p50": 39.36228152695945,
+    "output_tps_p90": 51.87418812774934,
+    "e2e_p50_ms": 16103,
+    "e2e_p90_ms": 43041,
+    "by_provider": [
+      {
+        "provider": "codex",
+        "requests": 1321,
+        "total_tokens": 489669442,
+        "cache_hit_percent": 89.46187023330432,
+        "tokens_per_usd": 632232.3333904861,
+        "cost": 774.5086990000005
+      }
+    ]
+  },
+  {
+    "week": "W3",
+    "start": "2026-09-19",
+    "end": "2026-09-25",
+    "partial": false,
+    "total_tokens": 616503232,
+    "requests": 2059,
+    "cache_hit_percent": 94.49785035324412,
+    "tokens_per_usd": 871701.4970600802,
+    "cost": 707.2412219999994,
+    "ttft_p50_ms": 4223.5,
+    "ttft_p90_ms": 10145.599999999999,
+    "output_tps_p50": 30.07412228026688,
+    "output_tps_p90": 49.59247472827105,
+    "e2e_p50_ms": 13874,
+    "e2e_p90_ms": 39310.80000000001,
+    "by_provider": [
+      {
+        "provider": "codex",
+        "requests": 2059,
+        "total_tokens": 616503232,
+        "cache_hit_percent": 94.49785035324412,
+        "tokens_per_usd": 871701.4970600802,
+        "cost": 707.2412219999994
+      }
+    ]
+  },
+  {
+    "week": "W4",
+    "start": "2026-09-26",
+    "end": "2026-10-02",
+    "partial": false,
+    "total_tokens": 2140957509,
+    "requests": 17140,
+    "cache_hit_percent": 95.39878149295758,
+    "tokens_per_usd": 3528129.5039701983,
+    "cost": 606.8250914799993,
+    "ttft_p50_ms": 3883.5,
+    "ttft_p90_ms": 7164.5,
+    "output_tps_p50": 29.429004804593788,
+    "output_tps_p90": 53.082667371461824,
+    "e2e_p50_ms": 9778.5,
+    "e2e_p90_ms": 24002.500000000007,
+    "by_provider": [
+      {
+        "provider": "codex",
+        "requests": 16679,
+        "total_tokens": 2076248506,
+        "cache_hit_percent": 95.37129034047399,
+        "tokens_per_usd": 3634558.094468177,
+        "cost": 571.2519794799992
+      },
+      {
+        "provider": "claude",
+        "requests": 461,
+        "total_tokens": 64709003,
+        "cache_hit_percent": 96.28675996122561,
+        "tokens_per_usd": 1819042.5116588052,
+        "cost": 35.57311200000001
+      }
+    ]
+  },
+  {
+    "week": "W5",
+    "start": "2026-10-03",
+    "end": "2026-10-09",
+    "partial": false,
+    "total_tokens": 3846743765,
+    "requests": 25647,
+    "cache_hit_percent": 95.6730083187089,
+    "tokens_per_usd": 2739158.211817117,
+    "cost": 1404.3525300600024,
+    "ttft_p50_ms": 4335,
+    "ttft_p90_ms": 9188.200000000004,
+    "output_tps_p50": 34.57307490832897,
+    "output_tps_p90": 91.02450171385046,
+    "e2e_p50_ms": 9820,
+    "e2e_p90_ms": 29111.600000000006,
+    "by_provider": [
+      {
+        "provider": "codex",
+        "requests": 22890,
+        "total_tokens": 3441573446,
+        "cache_hit_percent": 95.77988911291271,
+        "tokens_per_usd": 2972588.207581382,
+        "cost": 1157.7699989599985
+      },
+      {
+        "provider": "claude",
+        "requests": 2757,
+        "total_tokens": 405170319,
+        "cache_hit_percent": 94.75695140111627,
+        "tokens_per_usd": 1643142.8341356665,
+        "cost": 246.58253109999993
+      }
+    ]
+  },
+  {
+    "week": "W6",
+    "start": "2026-10-10",
+    "end": "2026-10-15",
+    "partial": true,
+    "total_tokens": 2176713005,
+    "requests": 15808,
+    "cache_hit_percent": 95.36167740321702,
+    "tokens_per_usd": 3451657.9424254457,
+    "cost": 630.62824918,
+    "ttft_p50_ms": 5765,
+    "ttft_p90_ms": 16014.8,
+    "output_tps_p50": 40.899888728038675,
+    "output_tps_p90": 106.45594605945202,
+    "e2e_p50_ms": 12188,
+    "e2e_p90_ms": 34963.100000000006,
+    "by_provider": [
+      {
+        "provider": "codex",
+        "requests": 13280,
+        "total_tokens": 1755039061,
+        "cache_hit_percent": 95.55166696198513,
+        "tokens_per_usd": 4298235.327605309,
+        "cost": 408.31618727999967
+      },
+      {
+        "provider": "claude",
+        "requests": 2528,
+        "total_tokens": 421673944,
+        "cache_hit_percent": 94.56840992532817,
+        "tokens_per_usd": 1896765.926221656,
+        "cost": 222.3120619000002
+      }
+    ]
+  }
+]

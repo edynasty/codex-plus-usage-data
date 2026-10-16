@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="description" content="Anonymized real-world Codex and Claude subscription usage data">
 <title>Codex + Claude Usage Data</title>
-<link rel="stylesheet" href="./assets/style.css?v=20261005-2015">
+<link rel="stylesheet" href="./assets/style.css?v=20261016-1133">
 </head>
 <body>
 <main>
@@ -42,6 +42,12 @@
     <div class="chart-block"><div class="chart-label">总 Token · 周</div><div id="weekly-chart" class="bench"></div></div>
   </section>
 
+  <section class="section">
+    <div class="section-label">订阅口径趋势 · Codex + Claude</div>
+    <div class="note">按周聚合的核心指标：Token、Cache Hit、Token / $、TPS P50、E2E P50，口径与用量明细一致。</div>
+    <div id="weekly-trend"></div>
+  </section>
+
   <section class="section data-section">
     <div class="section-label">用量明细 · Codex + Claude</div>
     <div class="note">按 周 → Provider → 模型 展开。主页面只使用当前数据，不再把 2026-09-29 的旧四周快照混进来。</div>
@@ -64,6 +70,18 @@
         <div class="chart-note" id="effort-note">优先使用当前 usage_logs；若当前数据尚未生成，则回退展示 2026-09-29 Codex 历史快照，并明确标记。</div>
         <div id="effort-bench"></div>
       </div>
+    </div>
+
+    <div class="chart-block">
+      <div class="chart-label">额度效率 · 模型 · 思考强度</div>
+      <div class="chart-note">逐请求窗口重建：每个模型 × 强度在 5h / 7d 窗口下，每 1% 利用率换来的 Token，以及 100% 等价 Token。</div>
+      <div id="quota-model-effort"></div>
+    </div>
+
+    <div class="chart-block">
+      <div class="chart-label">点数消耗 · 模型 · 思考强度</div>
+      <div class="chart-note">按账号时间序相邻点数余额差累加（余额上升按 0 计），只统计有可比基准的请求；无消耗的分组不展示。</div>
+      <div id="credits"></div>
     </div>
 
     <div class="chart-block context-block">
@@ -98,6 +116,6 @@
 
   <footer>公开页只读取脱敏聚合数据；真实账号名、账号 ID、凭据、Request ID、IP 与 User-Agent 不发布。</footer>
 </main>
-<script src="./assets/app.js?v=20261005-2015"></script>
+<script src="./assets/app.js?v=20261016-1133"></script>
 </body>
 </html>

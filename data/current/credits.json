@@ -1,0 +1,56 @@
+{
+  "by_model_effort": [
+    {
+      "provider": "codex",
+      "model": "gpt-5.6-sol",
+      "reasoning_effort": "low",
+      "requests": 283,
+      "tokens": 39414270,
+      "input_tokens": 1486992,
+      "cache_creation_tokens": 0,
+      "cache_read_tokens": 37854848,
+      "credits": 1410.06578,
+      "tokens_per_credit": 27952.078944856035,
+      "cache_hit_percent": 96.2203292982738
+    },
+    {
+      "provider": "codex",
+      "model": "gpt-5.6-sol",
+      "reasoning_effort": "high",
+      "requests": 1370,
+      "tokens": 231991762,
+      "input_tokens": 7239902,
+      "cache_creation_tokens": 0,
+      "cache_read_tokens": 224283264,
+      "credits": 1263.5959999999993,
+      "tokens_per_credit": 183596.467541841,
+      "cache_hit_percent": 96.87292545057889
+    },
+    {
+      "provider": "codex",
+      "model": "gpt-5.6-sol",
+      "reasoning_effort": "medium",
+      "requests": 1787,
+      "tokens": 302600443,
+      "input_tokens": 11629025,
+      "cache_creation_tokens": 0,
+      "cache_read_tokens": 290522496,
+      "credits": 370.0994000000001,
+      "tokens_per_credit": 817619.3827928386,
+      "cache_hit_percent": 96.15126047967172
+    },
+    {
+      "provider": "codex",
+      "model": "gpt-6.1-sol",
+      "reasoning_effort": "low",
+      "requests": 5065,
+      "tokens": 707086639,
+      "input_tokens": 25075353,
+      "cache_creation_tokens": 0,
+      "cache_read_tokens": 681046016,
+      "credits": 5.92333,
+      "tokens_per_credit": 119373163.23757076,
+      "cache_hit_percent": 96.44886076234863
+    }
+  ]
+}

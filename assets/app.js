@@ -120,8 +120,8 @@ function renderPerformance(rows,summary){
    return;
  }
  const rs=rows.filter(x=>Number(x.requests||0)>=20).sort((a,b)=>String(a.provider).localeCompare(String(b.provider))||Number(b.requests)-Number(a.requests)).slice(0,24);
- el.innerHTML='<div class="perf-table"><div class="perf-row perf-head"><div>模型 / 强度</div><div class="perf-num">TTFT P50</div><div class="perf-num">TTFT P90</div><div class="perf-num">TPS P50</div><div class="perf-num">TPS P90</div><div class="perf-num">E2E P50</div></div>'+
-  rs.map(x=>'<div class="perf-row"><div class="perf-model"><strong>'+esc(providerLabel(x.provider)+' · '+x.model)+'</strong><span>'+esc(x.reasoning_effort||'default')+' · '+fmtInt(x.requests)+' req · '+fmtInt(x.ttft_samples)+' TTFT samples</span></div><div class="perf-num">'+fmtDurationMs(x.ttft_p50_ms)+'</div><div class="perf-num">'+fmtDurationMs(x.ttft_p90_ms)+'</div><div class="perf-num">'+fmtTps(x.output_tps_p50)+'</div><div class="perf-num">'+fmtTps(x.output_tps_p90)+'</div><div class="perf-num">'+fmtDurationMs(x.e2e_p50_ms)+'</div></div>').join('')+'</div>';
+ el.innerHTML='<div class="perf-table"><div class="perf-row perf-head"><div>模型 / 强度</div><div class="perf-num">TTFT P50</div><div class="perf-num">TTFT P90</div><div class="perf-num">TTFT P95</div><div class="perf-num">TPS P50</div><div class="perf-num">TPS P90</div><div class="perf-num">TPS P95</div><div class="perf-num">E2E P50</div><div class="perf-num">E2E P90</div></div>'+
+  rs.map(x=>'<div class="perf-row"><div class="perf-model"><strong>'+esc(providerLabel(x.provider)+' · '+x.model)+'</strong><span>'+esc(x.reasoning_effort||'default')+' · '+fmtInt(x.requests)+' req · '+fmtInt(x.ttft_samples)+' TTFT samples</span></div><div class="perf-num">'+fmtDurationMs(x.ttft_p50_ms)+'</div><div class="perf-num">'+fmtDurationMs(x.ttft_p90_ms)+'</div><div class="perf-num">'+fmtDurationMs(x.ttft_p95_ms)+'</div><div class="perf-num">'+fmtTps(x.output_tps_p50)+'</div><div class="perf-num">'+fmtTps(x.output_tps_p90)+'</div><div class="perf-num">'+fmtTps(x.output_tps_p95)+'</div><div class="perf-num">'+fmtDurationMs(x.e2e_p50_ms)+'</div><div class="perf-num">'+fmtDurationMs(x.e2e_p90_ms)+'</div></div>').join('')+'</div>';
 }
 function historicalEffort(latest){
  const map=new Map;
@@ -135,6 +135,59 @@ function historicalEffort(latest){
    const den=g.input_tokens+g.cache_creation_tokens+g.cache_read_tokens;
    return {...g,tokens_per_usd:g.cost?g.total_tokens/g.cost:null,cache_hit_percent:den?g.cache_read_tokens/den*100:null};
  });
+}
+function renderWeeklyTrend(rows){
+ const el=$('#weekly-trend');if(!el)return;
+ if(!rows?.length){el.innerHTML='<div class="current-empty">周趋势数据尚未生成</div>';return}
+ const max=Math.max(...rows.map(r=>Number(r.total_tokens||0)),1);
+ el.innerHTML='<div class="perf-table trend-table"><div class="perf-row perf-head"><div>周</div><div class="perf-num">总 Token</div><div class="perf-num">请求</div><div class="perf-num">Cache Hit</div><div class="perf-num">Token / $</div><div class="perf-num">TPS P50</div><div class="perf-num">E2E P50</div></div>'+
+  rows.map(r=>{
+   const tok=Number(r.total_tokens||0),w=Math.max(1,tok/max*100);
+   const prov=(r.by_provider||[]).map(p=>providerLabel(p.provider)+' '+fmtTok(p.total_tokens)).join(' · ');
+   return '<div class="perf-row"><div class="perf-model"><strong>'+esc(r.week)+(r.partial?'<span class="current-badge">进行中</span>':'')+'</strong><span>'+esc(r.start)+' – '+esc(r.end)+' · '+esc(prov)+'</span><div class="trend-bar"><i style="width:'+w+'%"></i></div></div>'+
+    '<div class="perf-num strong">'+fmtTok(tok)+'</div>'+
+    '<div class="perf-num">'+fmtInt(r.requests)+'</div>'+
+    '<div class="perf-num">'+fmtPct(r.cache_hit_percent)+'</div>'+
+    '<div class="perf-num">'+(r.tokens_per_usd?fmtTok(r.tokens_per_usd):'—')+'</div>'+
+    '<div class="perf-num">'+fmtTps(r.output_tps_p50)+'</div>'+
+    '<div class="perf-num">'+fmtDurationMs(r.e2e_p50_ms)+'</div></div>';
+  }).join('')+'</div>';
+}
+function renderQuotaModelEffort(rows){
+ const el=$('#quota-model-effort');if(!el)return;
+ if(!rows?.length){el.innerHTML='<div class="current-empty">额度效率（模型 × 强度）数据尚未生成</div>';return}
+ const groups=new Map;
+ for(const r of rows){const key=providerLabel(r.provider)+' · '+r.model+' · '+(r.reasoning_effort||'default');if(!groups.has(key))groups.set(key,[]);groups.get(key).push(r)}
+ el.innerHTML='<div class="perf-table"><div class="perf-row perf-head"><div>模型 / 强度</div><div class="perf-num">5h / 1%</div><div class="perf-num">7d / 1%</div><div class="perf-num">100% 等价</div><div class="perf-num">Cache Hit</div><div class="perf-num">样本</div></div>'+
+  [...groups].sort((a,b)=>{
+    const ta=Math.max(...a[1].map(x=>Number(x.equivalent_100pct_tokens||0)));
+    const tb=Math.max(...b[1].map(x=>Number(x.equivalent_100pct_tokens||0)));
+    return tb-ta;
+  }).map(([name,rs])=>{
+   const h5=rs.find(x=>x.window==='5h'),d7=rs.find(x=>x.window==='7d');
+   const eq=Math.max(...rs.map(x=>Number(x.equivalent_100pct_tokens||0)));
+   const cache=rs.map(x=>Number(x.cache_hit_percent)).filter(Number.isFinite);
+   const samples=rs.reduce((a,x)=>a+Number(x.window_samples||0),0);
+   return '<div class="perf-row"><div class="perf-model"><strong>'+esc(name)+'</strong><span>'+fmtInt(samples)+' 个窗口样本</span></div>'+
+    '<div class="perf-num">'+(h5?.tokens_per_1pct?fmtTok(h5.tokens_per_1pct):'—')+'</div>'+
+    '<div class="perf-num">'+(d7?.tokens_per_1pct?fmtTok(d7.tokens_per_1pct):'—')+'</div>'+
+    '<div class="perf-num strong">'+(eq?fmtTok(eq):'—')+'</div>'+
+    '<div class="perf-num">'+(cache.length?fmtPct(cache.reduce((a,b)=>a+b,0)/cache.length):'—')+'</div>'+
+    '<div class="perf-num">'+fmtInt(rs.reduce((a,x)=>a+Number(x.observed_percent_span||0),0))+'%</div></div>';
+  }).join('')+'</div>';
+}
+function renderCredits(data){
+ const el=$('#credits');if(!el)return;
+ const rows=(data?.by_model_effort||[]).filter(r=>Number(r.credits||0)>0);
+ if(!rows.length){el.innerHTML='<div class="current-empty">暂无点数消耗数据（需要响应头里的点数余额快照）</div>';return}
+ const max=Math.max(...rows.map(r=>Number(r.credits||0)),1);
+ el.innerHTML='<div class="perf-table"><div class="perf-row perf-head"><div>模型 / 强度</div><div class="perf-num">可比请求</div><div class="perf-num">总 Token</div><div class="perf-num">点数消耗</div><div class="perf-num">缓存命中</div><div class="perf-num">Token / 点</div></div>'+
+  rows.map(r=>'<div class="perf-row"><div class="perf-model"><strong>'+esc(providerLabel(r.provider)+' · '+r.model)+'</strong><span>'+esc(r.reasoning_effort||'default')+'</span><div class="trend-bar"><i style="width:'+Math.max(1,Number(r.credits||0)/max*100)+'%"></i></div></div>'+
+   '<div class="perf-num">'+fmtInt(r.requests)+'</div>'+
+   '<div class="perf-num">'+fmtTok(r.tokens)+'</div>'+
+   '<div class="perf-num strong">'+new Intl.NumberFormat('en-US',{maximumFractionDigits:2}).format(Number(r.credits||0))+'</div>'+
+   '<div class="perf-num">'+fmtPct(r.cache_hit_percent)+'</div>'+
+   '<div class="perf-num">'+(r.tokens_per_credit?fmtTok(r.tokens_per_credit):'—')+'</div></div>').join('')+'</div>';
 }
 function renderContextComparison(ctx){
  const el=$('#context-comparison');if(!el)return;
@@ -150,10 +203,13 @@ Promise.all([
  json('./data/current/weekly_models.json',false),
  json('./data/current/model_effort.json',false),
  json('./data/current/quota_efficiency.json',false),
- json('./data/current/performance.json',false),
- json('./data/latest.json',false),
- json('./data/context.json',false)
-]).then(([summary,weekly,models,weeklyModels,effort,quota,performance,historicalLatest,contextData])=>{
+  json('./data/current/performance.json',false),
+  json('./data/current/weekly_trend.json',false),
+  json('./data/current/quota_model_effort.json',false),
+  json('./data/current/credits.json',false),
+  json('./data/latest.json',false),
+  json('./data/context.json',false)
+]).then(([summary,weekly,models,weeklyModels,effort,quota,performance,weeklyTrend,quotaModelEffort,credits,historicalLatest,contextData])=>{
  const c=summary.combined||{};
  $('#generated').textContent=new Date(summary.generated_at).toLocaleString('zh-CN',{hour12:false});
  $('#range').textContent=(summary.range?.start_date||'—')+' ～ '+(summary.range?.end_date||'—');
@@ -179,6 +235,9 @@ Promise.all([
  renderContextComparison(contextData);
  renderQuota(quota);
  renderPerformance(performance,summary);
+ renderWeeklyTrend(weeklyTrend||[]);
+ renderQuotaModelEffort(quotaModelEffort||[]);
+ renderCredits(credits);
 }).catch(err=>{
  $('#dataset-status').textContent='数据加载失败';
  document.body.insertAdjacentHTML('afterbegin','<div class="fatal">data/current 加载失败：'+esc(err.message)+'</div>');
