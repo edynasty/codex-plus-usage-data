@@ -59,7 +59,7 @@ function renderWeeklyStacked(el,rows){
  }).join('');
 }
 function detailLabel(kind,name,depth){
- const badge=kind==='provider'?'<span class="kind-badge">Provider</span>':kind==='model'?'<span class="kind-badge">模型</span>':'';
+ const badge=kind==='provider'?'<span class="kind-badge">Provider</span>':kind==='account'?'<span class="kind-badge">账号</span>':kind==='model'?'<span class="kind-badge">模型</span>':'';
  return '<span class="indent" style="--depth:'+depth+'"></span>'+badge+'<span class="node-label">'+esc(name)+'</span>';
 }
 function detailRow(r,quotaMap){
@@ -82,25 +82,45 @@ function detailRow(r,quotaMap){
   '<div class="cell num strong">'+fmtMoney(m.cost)+'</div>'+
  '</div>';
 }
-function renderDetail(weekly,weeklyModels,quota){
+function renderDetail(weekly,weeklyModels,weeklyAccountModels,quota){
  const el=$('#detail-tree');let seq=0;const rows=[];
  const quotaMap=new Map;
  for(const q of quota?.by_provider||[]){
    if(!quotaMap.has(q.provider))quotaMap.set(q.provider,new Map);
    quotaMap.get(q.provider).set(q.window,q);
  }
+ const sumMetrics=ms=>{
+   const out={requests:0,input_tokens:0,output_tokens:0,cache_creation_tokens:0,cache_read_tokens:0,total_tokens:0,cost:0};
+   for(const m of ms)for(const k of Object.keys(out))out[k]+=Number(m[k]||0);
+   const den=out.input_tokens+out.cache_creation_tokens+out.cache_read_tokens;
+   return {...out,tokens_per_usd:out.cost>0?out.total_tokens/out.cost:null,cache_hit_percent:den>0?out.cache_read_tokens/den*100:null};
+ };
  for(const w of weekly||[]){
   const wid='d'+(++seq),providers=(w.by_provider||[]).filter(x=>Number(x.requests||0)>0);
   rows.push({id:wid,parentId:null,depth:0,childrenCount:providers.length,metrics:w.total||{},label:'<span class="week-title">'+esc(w.week)+'</span>'+(w.partial?'<span class="current-badge">进行中</span>':'')+'<span class="period">'+esc(w.start)+' – '+esc(w.end)+'</span>'});
   for(const p of providers){
    const pid='d'+(++seq);
-   const ms=(weeklyModels||[]).filter(x=>x.week===w.week&&x.provider===p.provider&&Number(x.requests||0)>0).sort((a,b)=>Number(b.total_tokens||0)-Number(a.total_tokens||0));
-   rows.push({id:pid,parentId:wid,depth:1,childrenCount:ms.length,provider:p.provider,metrics:p,label:detailLabel('provider',providerLabel(p.provider),1)});
-   for(const m of ms)rows.push({id:'d'+(++seq),parentId:pid,depth:2,childrenCount:0,provider:p.provider,metrics:m,label:detailLabel('model',m.model||'—',2)});
+   // 账号层：该周该 Provider 下按账号聚合（匿名别名），账号下再挂模型
+   const acctRows=(weeklyAccountModels||[]).filter(x=>x.week===w.week&&x.provider===p.provider);
+   const accounts=[...new Set(acctRows.map(x=>x.account))].map(acct=>{
+     const models=acctRows.filter(x=>x.account===acct).sort((a,b)=>Number(b.total_tokens||0)-Number(a.total_tokens||0));
+     return {acct,models,metrics:sumMetrics(models)};
+   }).sort((a,b)=>Number(b.metrics.total_tokens||0)-Number(a.metrics.total_tokens||0));
+   const ms=accounts.flatMap(a=>a.models);
+   rows.push({id:pid,parentId:wid,depth:1,childrenCount:accounts.length||ms.length,provider:p.provider,metrics:p,label:detailLabel('provider',providerLabel(p.provider),1)});
+   if(accounts.length){
+     for(const a of accounts){
+       const aid='d'+(++seq);
+       rows.push({id:aid,parentId:pid,depth:2,childrenCount:a.models.length,provider:p.provider,metrics:a.metrics,label:detailLabel('account',a.acct,2)});
+       for(const m of a.models)rows.push({id:'d'+(++seq),parentId:aid,depth:3,childrenCount:0,provider:p.provider,metrics:m,label:detailLabel('model',m.model||'—',3)});
+     }
+   }else{
+     for(const m of ms)rows.push({id:'d'+(++seq),parentId:pid,depth:2,childrenCount:0,provider:p.provider,metrics:m,label:detailLabel('model',m.model||'—',2)});
+   }
   }
  }
  el.innerHTML='<div class="usage-row current-detail-row usage-head">'+
-  '<div class="cell">层级 · 周 › Provider › 模型</div><div class="cell num">请求</div><div class="cell num">Input</div><div class="cell num">Output</div><div class="cell num">Cache Write</div><div class="cell num">Cache Read</div><div class="cell num">总 Token</div><div class="cell num">Token / $</div><div class="cell num">Cache Hit</div><div class="cell num">5h / 1%</div><div class="cell num">7d / 1%</div><div class="cell num">Cost</div></div>'+
+  '<div class="cell">层级 · 周 › Provider › 账号 › 模型</div><div class="cell num">请求</div><div class="cell num">Input</div><div class="cell num">Output</div><div class="cell num">Cache Write</div><div class="cell num">Cache Read</div><div class="cell num">总 Token</div><div class="cell num">Token / $</div><div class="cell num">Cache Hit</div><div class="cell num">5h / 1%</div><div class="cell num">7d / 1%</div><div class="cell num">Cost</div></div>'+
   rows.map(r=>detailRow(r,quotaMap)).join('');
  const map=new Map(rows.map(r=>[r.id,r])),els=new Map($$('#detail-tree .current-detail-row[data-id]').map(e=>[e.dataset.id,e]));
  const kids=id=>[...els.values()].filter(e=>e.dataset.parent===id);
@@ -331,9 +351,10 @@ Promise.all([
   json('./data/current/quota_model_effort.json',false),
   json('./data/current/credits.json',false),
   json('./data/current/weekly_dimensions.json',false),
+  json('./data/current/weekly_account_models.json',false),
   json('./data/latest.json',false),
   json('./data/context.json',false)
-]).then(([summary,weekly,models,weeklyModels,effort,quota,performance,weeklyTrend,quotaModelEffort,credits,weeklyDimensions,historicalLatest,contextData])=>{
+]).then(([summary,weekly,models,weeklyModels,effort,quota,performance,weeklyTrend,quotaModelEffort,credits,weeklyDimensions,weeklyAccountModels,historicalLatest,contextData])=>{
  const c=summary.combined||{};
  $('#generated').textContent=new Date(summary.generated_at).toLocaleString('zh-CN',{hour12:false});
  $('#range').textContent=(summary.range?.start_date||'—')+' ～ '+(summary.range?.end_date||'—');
@@ -344,7 +365,7 @@ Promise.all([
  $('#provider-summary').innerHTML=providers.map(p=>'<div class="provider-card"><div class="provider-name">'+providerLabel(p.provider)+'</div><div class="provider-metric"><strong>'+fmtInt(p.requests)+'</strong><span>请求</span></div><div class="provider-metric"><strong>'+fmtTok(p.total_tokens)+'</strong><span>总 Token</span></div><div class="provider-metric"><strong>'+fmtPct(p.cache_hit_percent)+'</strong><span>Cache Hit</span></div><div class="provider-metric"><strong>'+fmtTok(p.tokens_per_usd)+'</strong><span>Token / $</span></div></div>').join('');
  const wr=(weekly||[]).slice().reverse().map(w=>({name:w.week+(w.partial?' *':''),tokens:w.total?.total_tokens||0,requests:w.total?.requests||0,codex:(w.by_provider||[]).find(x=>x.provider==='codex')?.total_tokens||0,claude:(w.by_provider||[]).find(x=>x.provider==='claude')?.total_tokens||0}));
  renderWeeklyStacked($('#weekly-chart'),wr);
- renderDetail((weekly||[]).slice().reverse(),weeklyModels||[],quota);
+ renderDetail((weekly||[]).slice().reverse(),weeklyModels||[],weeklyAccountModels||[],quota);
  bench($('#provider-bench'),providers.map(p=>({name:providerLabel(p.provider),v:p.tokens_per_usd,cache:p.cache_hit_percent,req:p.requests})),'v',x=>fmtTok(x.v)+' / $ <span class="small">'+fmtInt(x.req)+' req · Cache '+fmtPct(x.cache)+'</span>');
  const mr=(models||[]).filter(x=>Number(x.requests||0)>=20).sort((a,b)=>Number(b.tokens_per_usd||0)-Number(a.tokens_per_usd||0)).map(x=>({name:providerLabel(x.provider)+' · '+x.model,v:x.tokens_per_usd,cache:x.cache_hit_percent,req:x.requests,total:x.total_tokens}));
  bench($('#model-bench'),mr,'v',x=>fmtTok(x.v)+' / $ <span class="small">'+fmtInt(x.req)+' req · '+fmtTok(x.total)+'</span>');
